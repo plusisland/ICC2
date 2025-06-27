@@ -1,8 +1,5 @@
-
 # 如何取得 Reference Methodology
-
  - 前往 Synopsys SolvNet [Methodology](https://solvnet.synopsys.com/rmgen) 下載，需有驗證帳號方可下載。
- 
  - 或者執行 **icc2_shell -gui** 開啟圖形介面，點選
 
 ```mermaid
@@ -17,7 +14,6 @@ flowchart LR
     tar zxvf *.tar.gz
 
 # 如何建立架構
-
 先建立 **design.cfg** 檔案，根據需求去調整檔案內容。
 
 FLAT 架構填入
@@ -45,28 +41,29 @@ HIER 架構填入多層名稱，只能使用 TAB 或 SPACE 鍵。
 			MID_module_name
 			BOT_module_name
 
-# Makefile_* 設定
 
-切到 **$projdir/dp/TOP_module_name** 底下，編輯 Makefile
+
+請先切換到 **$projdir/dp/TOP_module_name** 底下。刪除 rm_tech_scrripts 捷徑，建立新捷徑指到 TECH 資料夾。
+
+	rm -rf rm_tech_scripts
+	ln -s ../../../tech rm_tech_scripts
+
+# Makefile_* 設定
+根據啟動環境編輯 Makefile 內容以符合環境設定
 
 	ICC2_EXEC = icc2_shell_2023
 	FM_EXEC = fm_shell_2023
 	VC_LP_EXEC = vc_static_shell_2023
-	OPTIONS =-f ./set_options.tcl
+	OPTIONS = -f set_options.tcl
 
-新增 **set_options.tcl** 檔案，內容為
+新增 **set_options.tcl** 檔案，內容參考
 
+	rm -rf ~/.synopsys_icc2_gui
 	set_host_options -max_cores 8
 	set_app_options -name shell.common.tmp_dir_path -value /export/home/pdsapr
 	gui_create_pref_key -category {layout} -key {layoutToolbarAutoApply} -value_type {bool} -value {true}
-
-新增 **run_icc2** 檔案，內容為
-
-	rm -rf ~/.synopsys_icc2_gui
-	icc2_shell_2023 -gui -f ./set_option.tcl -output_log_file logs_icc2/icc2.log.`date "+%m_%d_%H_%M"`
    
 # rm_setup 資料夾設定
-
 首先切到 **$projdir/dp/TOP_module_name/rm_utilities** 底下，輸入 rm_setup 資料夾底下想設定的檔案
 
 	configureRM --in $projdir/dp/TOP_module_name/rm_setup/design_setup.tcl
@@ -74,91 +71,76 @@ HIER 架構填入多層名稱，只能使用 TAB 或 SPACE 鍵。
 需要設定下列這些檔案項目
 
 ## design_setup.tcl
-
-### GENERAL
-	set DESIGN_NAME "module_name"
-
-### DESIGN PLANNING SETUP
-	set DESIGN_STYLE "flat" ;# 只有在 hier PNR 流程才需要改成 hier
-	set PHYSICAL_HIERARCHY_LEVEL "bottom" ;# 只有在 hier PNR 流程才需要改成 top|intermediate|bottom;
-
-### LIBRARY SETUP
-	set REFERENCE_LIBRARY "" ;# 填入NDM 所在位置 STD_NDM 要在最前面
-	set TCL_MULTI_VT_CONSTRAINT_FILE "multi_vth_constraint_script.tcl" ;# A Tcl file which defines and applies multi Vt constraints
-	set TCL_LIB_CELL_PURPOSE_FILE "set_lib_cell_purpose.tcl" ;# A Tcl file which applies lib cell purpose related restrictions;
-	set TIE_LIB_CELL_PATTERN_LIST "*/*TIE*" ;# TIE CELL 名稱
-	set HOLD_FIX_LIB_CELL_PATTERN_LIST ""*/NBUF* */AOBUF* */AOINV* */SDFF*" ;# include repeaters, always-on repeaters and gates always-on buffers
-	set CTS_LIB_CELL_PATTERN_LIST "CKBUF CKINV" ;# buffers and inverters
-
-### TECHNOLOGY
-	set TECH_FILE "../tech/"
-	set TCL_TECH_SETUP_FILE "init_design.tech_setup.tcl"
-	set ENABLE_REDUNDANT_VIA_INSERTION true;
-	set ENABLE_POST_ROUTE_OPT_REDUNDANT_VIA_INSERTION true;
-	set TCL_ANTENNA_RULE_FILE "../tech/"
-
-### MCMM SCENARIO/MODE/CORNER SETUP 
-	set TCL_MCMM_SETUP_FILE "init_design.memm_setup.tcl"
-	set TCL_PARASITIC_SETUP_FILE "init_design.parasitic_setup.tcl"
-
-## Variables for scenario activation and focused scenario
-	set PLACE_OPT_ACTIVE_SCENARIO_LIST ""
-	set CLOCK_OPT_CTS_ACTIVE_SCENARIO_LIST ""
-	set ROUTE_OPT_ACTIVE_SCENARIO_LIST ""
-
-### LOGICAL INPUTS
-	set VERILOG_NETLIST_FILES "design/*.vo"
-	set UPF_FILE "design/*.upf"
-
-### PHYSICAL INPUTS
-	set TCL_FLOORPLAN_FILE "floorplan/floorplan.tcl"
-	set DEF_SCAN_FILE "*design/*.def"
+項目							|變數											|數值								|說明																			|
+--------------------------------|-----------------------------------------------|-----------------------------------|-------------------------------------------------------------------------------|
+GENERAL							|DESIGN_NAME									|module_name						|填入目前 module 名稱															|
+DESIGN PLANNING SETUP			|DESIGN_STYLE									|flat								|unpack_rm_dir.pl 在 HIER 流程自動修改成 hier									|
+DESIGN PLANNING SETUP			|PHYSICAL_HIERARCHY_LEVEL						|									|unpack_rm_dir.pl 在 HIER 流程自動改成 top 、 intermediate 、 bottom			|
+LIBRARY SETUP					|REFERENCE_LIBRARY								|*.ndm								|填入NDM 所在位置 STD_NDM 要在最前面											|
+LIBRARY SETUP					|TCL_MULTI_VT_CONSTRAINT_FILE					|multi_vth_constraint_script.tcl	|編輯 rm_user_plugin_scripts 裡的檔案，修改 HVT SVT LVT 名稱與LVT % 數			|
+LIBRARY SETUP					|TCL_LIB_CELL_PURPOSE_FILE						|set_lib_cell_purpose.tcl			|編輯 rm_icc2_pnr_scripts 裡的檔案，拷貝 DONT_USE_FILE 多增加 DONT_TOUCH_FILE	|
+LIBRARY SETUP					|TIE_LIB_CELL_PATTERN_LIST						|*/*TIE*							|TIE CELL 名稱																	|
+LIBRARY SETUP					|HOLD_FIX_LIB_CELL_PATTERN_LIST					|*/BUF* */INV* */DEL*				|修 Hold time 使用的 cell														|
+LIBRARY SETUP					|CTS_LIB_CELL_PATTERN_LIST						|*/NBUF* */AOBUF* */AOINV* */SDFF*	|修 CTS 使用，包含repeaters, always-on repeaters, and gates, always-on buffer	|
+LIBRARY SETUP					|CTS_ONLY_LIB_CELL_PATTERN_LIST					|*/CKBUF* */CKINV*					|長 CTS 使用																	|
+TECHNOLOGY						|TECH_FILE										|tech.tf							|technology file																|
+TECHNOLOGY						|ENABLE_REDUNDANT_VIA_INSERTION					|true								|clock_opt_opto, route_auto, route_opt 塞 double via							|
+TECHNOLOGY						|ENABLE_POST_ROUTE_OPT_REDUNDANT_VIA_INSERTION	|true								|hyper_route_opt 塞 double via													|
+TECHNOLOGY						|TCL_ANTENNA_RULE_FILE							|antenna_rule.tcl					|參考 examples/TCL_ANTENNA_RULE_FILE.txt										|
+MCMM SCENARIO/MODE/CORNER SETUP	|TCL_MCMM_SETUP_FILE							|init_design.memm_setup.tcl			|參考 examples/TCL_MCMM_SETUP_FILE.*.tcl										|
+MCMM SCENARIO/MODE/CORNER SETUP	|TCL_PARASITIC_SETUP_FILE						|init_design.parasitic_setup.tcl	|參考 examples/TCL_PARASITIC_SETUP_FILE.tcl										|
+MCMM SCENARIO/MODE/CORNER SETUP	|PLACE_OPT_ACTIVE_SCENARIO_LIST					|SCENARIO 名稱						|填入 place_opt 啟用的 SCENARIO 名稱											|
+MCMM SCENARIO/MODE/CORNER SETUP	|CLOCK_OPT_CTS_ACTIVE_SCENARIO_LIST				|SCENARIO 名稱						|填入 clock_opt_cts 啟用的 SCENARIO 名稱										|
+MCMM SCENARIO/MODE/CORNER SETUP	|ROUTE_OPT_ACTIVE_SCENARIO_LIST					|SCENARIO 名稱						|填入 route_opt 啟用的 SCENARIO 名稱											|
+LOGICAL INPUTS					|VERILOG_NETLIST_FILES							|design/*.vo						|design 給的																	|
+LOGICAL INPUTS					|UPF_FILE										|design/*.upf						|design 給的																	|
+PHYSICAL INPUTS					|TCL_FLOORPLAN_FILE								|floorplan/floorplan.tcl			|自行規劃																		|
+PHYSICAL INPUTS					|DEF_SCAN_FILE									|design/*.def						|design 給的																	|
 
 ## sidefile_setup.tcl
+項目	|變數										|數值								|說明								|
+--------|-------------------------------------------|-----------------------------------|-----------------------------------|
+GENERAL	|ROUTING_LAYER_DIRECTION_OFFSET_LIST		|{ME1 horizontal} {ME2 vertical}	|修改繞線方向						|
+GENERAL	|MIN_ROUTING_LAYER							|ME1								|繞線底層 layer						|
+GENERAL	|MAX_ROUTING_LAYER							|ME5								|繞線頂層 layer						|
+GENERAL	|TCL_USER_CONNECT_PG_NET_SCRIPT				|user_connect_pg_net.tcl			|自定義 cell power & ground 連接	|
+GENERAL	|TCL_COMPILE_PG_FILE						|compile_pg.tcl						|自定義	power & ground 佈線			|
+GENERAL	|TCL_LIB_CELL_DONT_USE_FILE					|design/dont_use.tcl				|定義不使用 cell					|
+GENERAL	|TCL_LIB_CELL_DONT_TOUCH_FILE				|design/dont_touch.tcl				|design 專用						|
+GENERAL	|TCL_CTS_NDR_RULE_FILE						|cts_ndr.tcl						|參考 examples/cts_ndr.tcl			|
+GENERAL	|CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST		|*/FILE64U */FILE32U */FILE16U		|填入有電容 FILER 名稱由大到小		|
+GENERAL	|CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST	|*/FIL4U */FIL2U */FIL1U			|填入一般 FILER 名稱由大到小		|
+GENERAL	|WRITE_GDS_LAYER_MAP_FILE					|streamout.map						|轉 GDS	對號用						|
 
-### Node specific variables
-	set ROUTING_LAYER_DIRECTION_OFFSET_LIST "{ME1 horizontal} {ME2 vertical}"
-	set MIN_ROUTING_LAYER "ME1"
-	set MAX_ROUTING_LAYER "ME5"
-	set TCL_USER_CONNECT_PG_NET_SCRIPT "user_connect_pg_net.tcl"
-	set TCL_COMPILE_PG_FILE "compile_pg.tcl"
-	set TCL_LIB_CELL_DONT_USE_FILE "design/dont_use.tcl"
-	set TCL_LIB_CELL_DONT_TOUCH_FILE "design/dont_touch.tcl"
-	set TCL_CTS_NDR_RULE_FILE "cts_ndr.tcl"
-	set CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST "C"
-	set CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST "NO_C"
-	set WRITE_GDS_LAYER_MAP_FILE "streamout.map.icc2"
+cts_ndr.tcl 修改
+
+	CTS_NDR_RULE_NAME "rm_2w2s"
+	CTS_NDR_MIN_ROUTING_LAYER "ME3"
+	CTS_NDR_MAX_ROUTING_LAYER "ME5"
 
 ## icc2_dp_setup.tcl
+項目	|變數									|數值							|說明											|
+--------|---------------------------------------|-------------------------------|-----------------------------------------------|
+GENERAL	|DP_FLOW								|flat							|unpack_rm_dir.pl 在 HIER 流程自動修改成 hier	|
+GENERAL	|TCL_FLOORPLAN_FILE_DP					|floorplan/floorplan.tcl		|Design Planning 專用 floorplan					|
+GENERAL	|DP_HIGH_CAPACITY_MODE					|false							|決定 verilog 讀取使用 design / outline 模式	|
+GENERAL	|FLOORPLAN_STYLE						|abutted						|管道模式 (channel) 或緊鄰模式 (abutted)		|
+GENERAL	|DISTRIBUTED							|false							|個別 block 不同程序執行						|
+GENERAL	|SUB_BLOCK_REFS							|各 HIER module 名稱			|unpack_rm_dir.pl 在 HIER 流程自動修改			|
+GENERAL	|TCL_TIMING_RULER_SETUP_FILE			|init_design.parasitic_setup.tcl|設定tlu+										|
+GENERAL	|TCL_USER_INIT_DP_PRE_SCRIPT			|init_dp_pre_script.tcl			|設定 plan.outline.dense_module_depth -1		|
+GENERAL	|TCL_SHAPING_CONSTRAINTS_FILE			|shaping_constraints.tcl		|設定 vlotage area 和 shaping constraints		|
+GENERAL	|TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE	|auto_placement_constraints.tcl	|設定 keepout_margin 和 macro 擺放方向			|
+GENERAL	|CONGESTION_DRIVEN_PLACEMENT			|macro							|建議設定										|
+GENERAL	|TIMING_DRIVEN_PLACEMENT				|std_cell						|建議設定										|
+GENERAL	|MACRO_CONSTRAINT_STYLE					|edge							|建議設定										|
+GENERAL	|TCL_PNS_FILE							|pns_strategies.tcl				|設定 power 和 ground 佈線範圍與佈線條件		|
+GENERAL	|PNS_CHARACTERIZE_FLOW					|true							|各 block 重複執行 pns_strategies 內容			|
+GENERAL	|PNS_CHARACTERIZE_FLOW					|false							|由上層 power 和 ground 佈線推下 block 內		|
+GENERAL	|TCL_COMPILE_PG_FILE					|compile_pg.tcl					|此處設定無用，被 sidefile_setup.tcl 覆蓋		|
+GENERAL	|TCL_PIN_CONSTRAINT_FILE				|pins_constraints.tcl			|設定 feedthrough 條件與允許使用的 layer		|
 
-### Flow setup applicable to both flat and hierarchical DP flows
-	set DP_FLOW "flat"
-	set TCL_FLOORPLAN_FILE_DP "floorplan/floorplan.tcl"
-### Hierarchical Design Planning Setup
-	set DP_HIGH_CAPACITY_MODE "false"
-	set FLOORPLAN_STYLE "abutted"
-	set DISTRIBUTED "false"
-### If the design is run with MIBs then change the block list appropriately
-	set SUB_BLOCK_REFS ""
-### TOP LEVEL FLOORPLAN CREATION (die, pad, RDL) / PLACE IO
-	set TCL_USER_INIT_DP_PRE_SCRIPT "init_dp_pre_script.tcl"
-### SHAPING
-	set TCL_SHAPING_CONSTRAINTS_FILE "shaping_constraints.tcl"
-### PLACEMENT
-	set TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE "auto_placement_constraints.tcl"
-	set CONGESTION_DRIVEN_PLACEMENT "macro"
-	set TIMING_DRIVEN_PLACEMENT "std_cell"
-	set MACRO_CONSTRAINT_STYLE "edge"
-### PNS
-	set TCL_PNS_FILE "pns_strategies.tcl"
-	set PNS_CHARACTERIZE_FLOW "false"
-	set TCL_COMPILE_PG_FILE "此設定會被 sidefile_setup.tcl 內容覆蓋"
-### PLACE PINS
-	set TCL_PIN_CONSTRAINT_FILE "pins_constraints.tcl"
-## icc2_pnr_setup.tcl
-	目前無需修改
-
-# FLAT Design Planning 流程圖
+# Design Planning 流程圖 (FLAT)
 
 ```mermaid
 stateDiagram-v2
@@ -173,7 +155,7 @@ state FLAT {
 }
 ```
 
-# HIER Design Planning 流程圖
+# Design Planning 流程圖 (HIER)
 
 ```mermaid
 stateDiagram-v2
