@@ -68,25 +68,35 @@ HIER 架構填入多層名稱，只能使用 TAB 或 SPACE 鍵。
 
 	configureRM --in $projdir/dp/TOP_module_name/rm_setup/design_setup.tcl
 
-需要設定下列這些檔案項目
+需要修改下列檔案
 
  - [design_setup.tcl](#design_setup.tcl)
- - [sidefile_setup.tcl](#sidefile_setup.tcl)
+ - [icc2_pnr_setup.tcl](#icc2_pnr_setup.tcl)
  - [icc2_dp_setup.tcl](#icc2_dp_setup.tcl)
+ - [header_icc2_pnr.tcl](#header_icc2_pnr.tcl)
+ - [header_icc2_dp.tcl](#header_icc2_dp.tcl) 
+ - [sidefile_setup.tcl](#sidefile_setup.tcl)
+
+# rm_icc2_pnr_scripts 資料夾設定
+
+需要建立下列檔案
+
+ - [init_design.memm_setup.tcl](#init_design.memm_setup.tcl)
+ - [init_design.parasitic_setup.tcl](#init_design.parasitic_setup.tcl)
 
 ## design_setup.tcl
 項目							|變數											|數值								|說明																			|
 --------------------------------|-----------------------------------------------|-----------------------------------|-------------------------------------------------------------------------------|
-GENERAL							|DESIGN_NAME									|module_name						|填入目前 module 名稱															|
+GENERAL							|DESIGN_NAME									|module_name						|unpack_rm_dir.pl 根據 design.cfg 自動填入 module 名稱							|
 DESIGN PLANNING SETUP			|DESIGN_STYLE									|flat								|unpack_rm_dir.pl 在 HIER 流程自動修改成 hier									|
 DESIGN PLANNING SETUP			|PHYSICAL_HIERARCHY_LEVEL						|									|unpack_rm_dir.pl 在 HIER 流程自動改成 top 、 intermediate 、 bottom			|
 LIBRARY SETUP					|REFERENCE_LIBRARY								|*.ndm								|填入NDM 所在位置 STD_NDM 要在最前面											|
-LIBRARY SETUP					|TCL_MULTI_VT_CONSTRAINT_FILE					|multi_vth_constraint_script.tcl	|編輯 rm_user_plugin_scripts 裡的檔案，修改 HVT SVT LVT 名稱與LVT % 數			|
+LIBRARY SETUP					|TCL_MULTI_VT_CONSTRAINT_FILE					|multi_vth_constraint_script.tcl	|編輯 rm_user_plugin_scripts 裡的檔案，修改 HVT SVT LVT 名稱與 LVT % 數			|
 LIBRARY SETUP					|TCL_LIB_CELL_PURPOSE_FILE						|set_lib_cell_purpose.tcl			|編輯 rm_icc2_pnr_scripts 裡的檔案，拷貝 DONT_USE_FILE 多增加 DONT_TOUCH_FILE	|
 LIBRARY SETUP					|TIE_LIB_CELL_PATTERN_LIST						|*/*TIE*							|TIE CELL 名稱																	|
-LIBRARY SETUP					|HOLD_FIX_LIB_CELL_PATTERN_LIST					|*/BUF* */INV* */DEL*				|修 Hold time 使用的 cell														|
+LIBRARY SETUP					|HOLD_FIX_LIB_CELL_PATTERN_LIST					|*/BUF* */INV* */DEL*				|填入修 Hold time 使用的 cell													|
 LIBRARY SETUP					|CTS_LIB_CELL_PATTERN_LIST						|*/NBUF* */AOBUF* */AOINV* */SDFF*	|修 CTS 使用，包含repeaters, always-on repeaters, and gates, always-on buffer	|
-LIBRARY SETUP					|CTS_ONLY_LIB_CELL_PATTERN_LIST					|*/CKBUF* */CKINV*					|長 CTS 使用																	|
+LIBRARY SETUP					|CTS_ONLY_LIB_CELL_PATTERN_LIST					|*/CKBUF* */CKINV*					|填入長 CTS 使用的 cell															|
 TECHNOLOGY						|TECH_FILE										|tech.tf							|technology file																|
 TECHNOLOGY						|ENABLE_REDUNDANT_VIA_INSERTION					|true								|clock_opt_opto, route_auto, route_opt 塞 double via							|
 TECHNOLOGY						|ENABLE_POST_ROUTE_OPT_REDUNDANT_VIA_INSERTION	|true								|hyper_route_opt 塞 double via													|
@@ -98,7 +108,7 @@ MCMM SCENARIO/MODE/CORNER SETUP	|CLOCK_OPT_CTS_ACTIVE_SCENARIO_LIST				|SCENARIO
 MCMM SCENARIO/MODE/CORNER SETUP	|ROUTE_OPT_ACTIVE_SCENARIO_LIST					|SCENARIO 名稱						|填入 route_opt 啟用的 SCENARIO 名稱											|
 LOGICAL INPUTS					|VERILOG_NETLIST_FILES							|design/*.vo						|design 給的																	|
 LOGICAL INPUTS					|UPF_FILE										|design/*.upf						|design 給的																	|
-PHYSICAL INPUTS					|TCL_FLOORPLAN_FILE								|floorplan/floorplan.tcl			|自行規劃																		|
+PHYSICAL INPUTS					|TCL_FLOORPLAN_FILE								|floorplan/floorplan.tcl			|Block-level Implementation 專用 floorplan										|
 PHYSICAL INPUTS					|DEF_SCAN_FILE									|design/*.def						|design 給的																	|
 
 ## sidefile_setup.tcl
@@ -114,7 +124,7 @@ GENERAL	|TCL_LIB_CELL_DONT_TOUCH_FILE				|design/dont_touch.tcl				|design 專�
 GENERAL	|TCL_CTS_NDR_RULE_FILE						|cts_ndr.tcl						|參考 examples/cts_ndr.tcl			|
 GENERAL	|CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST		|*/FILE64U */FILE32U */FILE16U		|填入有電容 FILER 名稱由大到小		|
 GENERAL	|CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST	|*/FIL4U */FIL2U */FIL1U			|填入一般 FILER 名稱由大到小		|
-GENERAL	|WRITE_GDS_LAYER_MAP_FILE					|streamout.map						|轉 GDS	對號用						|
+GENERAL	|WRITE_GDS_LAYER_MAP_FILE					|streamout.map						|轉 GDS	對 layer 用					|
 
 cts_ndr.tcl 修改
 
@@ -126,12 +136,12 @@ cts_ndr.tcl 修改
 項目	|變數									|數值							|說明											|
 --------|---------------------------------------|-------------------------------|-----------------------------------------------|
 GENERAL	|DP_FLOW								|flat							|unpack_rm_dir.pl 在 HIER 流程自動修改成 hier	|
-GENERAL	|TCL_FLOORPLAN_FILE_DP					|floorplan/floorplan.tcl		|Design Planning 專用 floorplan					|
+GENERAL	|TCL_FLOORPLAN_FILE_DP					|floorplan/floorplan.tcl		|Design Planning 專用 floorplan	請自行設計		|
 GENERAL	|DP_HIGH_CAPACITY_MODE					|false							|決定 verilog 讀取使用 design / outline 模式	|
 GENERAL	|FLOORPLAN_STYLE						|abutted						|管道模式 (channel) 或緊鄰模式 (abutted)		|
 GENERAL	|DISTRIBUTED							|false							|個別 block 不同程序執行						|
 GENERAL	|SUB_BLOCK_REFS							|各 HIER module 名稱			|unpack_rm_dir.pl 在 HIER 流程自動修改			|
-GENERAL	|TCL_TIMING_RULER_SETUP_FILE			|init_design.parasitic_setup.tcl|設定tlu+										|
+GENERAL	|TCL_TIMING_RULER_SETUP_FILE			|init_design.parasitic_setup.tcl|設定 tlu+										|
 GENERAL	|TCL_USER_INIT_DP_PRE_SCRIPT			|init_dp_pre_script.tcl			|設定 plan.outline.dense_module_depth -1		|
 GENERAL	|TCL_SHAPING_CONSTRAINTS_FILE			|shaping_constraints.tcl		|設定 vlotage area 和 shaping constraints		|
 GENERAL	|TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE	|auto_placement_constraints.tcl	|設定 keepout_margin 和 macro 擺放方向			|
