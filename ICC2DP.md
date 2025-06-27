@@ -70,6 +70,10 @@ HIER 架構填入多層名稱，只能使用 TAB 或 SPACE 鍵。
 
 需要設定下列這些檔案項目
 
+ - [design_setup.tcl](#design_setup.tcl)
+ - [sidefile_setup.tcl](#sidefile_setup.tcl)
+ - [icc2_dp_setup.tcl](#icc2_dp_setup.tcl)
+
 ## design_setup.tcl
 項目							|變數											|數值								|說明																			|
 --------------------------------|-----------------------------------------------|-----------------------------------|-------------------------------------------------------------------------------|
@@ -143,55 +147,59 @@ GENERAL	|TCL_PIN_CONSTRAINT_FILE				|pins_constraints.tcl			|設定 feedthrough 
 # Design Planning 流程圖 (FLAT)
 
 ```mermaid
-stateDiagram-v2
-    setup --> create_fusion_reference_library
-state FLAT {
-    setup --> init_design_dp
-    init_design_dp --> create_floorplan
-    create_floorplan --> create_power
-    create_power --> place_pins
-    place_pins --> write_data_dp
-    write_data_dp --> all_dp
-}
+flowchart TD
+    setup["setup"] -.-> create_fusion_reference_library["create_fusion_reference_library"]
+    setup --> init_design_dp["init_design_dp"]
+    init_design_dp --> create_floorplan["create_floorplan"]
+    create_floorplan --> create_power["create_power"]
+    create_power --> place_pins["place_pins"]
+    place_pins --> write_data_dp["write_data_dp"]
+    write_data_dp --> all_dp["all_dp"]
+
+    setup@{ shape: rounded}
+    create_fusion_reference_library@{ shape: lean-r}
+    all_dp@{ shape: rounded}
 ```
 
 # Design Planning 流程圖 (HIER)
 
 ```mermaid
-stateDiagram-v2
-    setup --> create_fusion_reference_library
-state HIER {	
-    setup --> init_dp
-    init_dp --> commit_blocks
-    commit_blocks --> split_constraints:DP_HIGH_CAPACITY_MODE
+flowchart TD
+    setup["setup"] -.-> create_fusion_reference_library["create_fusion_reference_library"]
+    setup --> init_dp["init_dp"]
+    init_dp --> commit_blocks["commit_blocks"]
+    commit_blocks --> expand_outline["expand_outline"] & split_constraints["split_constraints"]
     split_constraints --> expand_outline
-    commit_blocks --> expand_outline
-    expand_outline --> shaping
-    shaping --> placement
-    placement --> create_power
-    create_power --> clock_trunk_planning:CTP
+    expand_outline --> shaping["shaping"]
+    shaping --> placement["placement"]
+    placement --> create_power["create_power"]
+    create_power --> clock_trunk_planning["clock_trunk_planning"] & place_pins["place_pins"]
     clock_trunk_planning --> place_pins
-    create_power --> place_pins
-    place_pins --> time_budget
-    time_budget --> write_data_dp
-    write_data_dp --> all
-}
+    place_pins --> time_budget["time_budget"]
+    time_budget --> write_data_dp["write_data_dp"]
+    write_data_dp --> all["all"]
+
+    setup@{ shape: rounded}
+    create_fusion_reference_library@{ shape: lean-r}
+    all@{ shape: rounded}
 ```
 
 # Block-level Implementation 流程圖
 
 ```mermaid
-stateDiagram-v2
-    setup --> create_fusion_reference_library
-state P&R {	
-    setup --> init_design
-    init_design --> place_opt
-    place_opt --> clock_opt_cts
-    clock_opt_cts --> clock_opt_opto
-    clock_opt_opto --> route_auto
-    route_auto --> route_opt
-    route_opt --> chip_finish
-    chip_finish --> icv_in_design
-	icv_in_design --> all
-}
+flowchart TD
+    setup["setup"] -.-> create_fusion_reference_library["create_fusion_reference_library"]
+    setup --> init_design["init_design"]
+    init_design --> place_opt["place_opt"]
+    place_opt --> clock_opt_cts["clock_opt_cts"]
+    clock_opt_cts --> clock_opt_opto["clock_opt_opto"]
+    clock_opt_opto --> route_auto["route_auto"]
+    route_auto --> route_opt["route_opt"]
+    route_opt --> chip_finish["chip_finish"]
+    chip_finish --> icv_in_design["icv_in_design"]
+    icv_in_design --> all["all"]
+
+    setup@{ shape: rounded}
+    create_fusion_reference_library@{ shape: lean-r}
+    all@{ shape: rounded}
 ```
