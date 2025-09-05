@@ -181,7 +181,6 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 - [cts_ndr.tcl](#cts_ndrtcl) 複製 examples/cts_ndr.tcl 修改
 - [init_design.memm_setup.tcl](#init_designmemm_setuptcl) 複製 examples/TCL_MCMM_SETUP_FILE.auto_expanded.tcl 修改
 - [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 修改
-- [set_timing_derate.tcl](#set_timing_deratetcl) 自行建立或合併進 init_design.memm_setup.tcl
 
 ### cts_ndr.tcl
 
@@ -193,20 +192,182 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 
 ### init_design.memm_setup.tcl
 
+```mermaid
+classDiagram
+    scenario <-- mode
+    scenario <-- corner
+    corner <-- library
+    corner <-- parasitic
+    scenario : -name
+    scenario : -mode()
+    scenario : -corner()
+    class mode{
+      function
+      capture
+      shift
+      mbist
+    }
+    class corner{
+      set_process_number
+      set_voltage
+      set_temperature
+      set_parasitic_patameters
+      set_timing_derate
+      set_clock_uncertainty
+    }
+    class library{
+      process
+      voltage
+      temperature
+      operaing_conditions()
+    }
+    class parasitic{
+      cworst
+      cbset
+      rcworst
+      rcbest
+      typical
+      -tluplus()
+      -layermap()
+    }
+```
+
 ```text
-待展開
+set mode_list "function capture shift mbist"
+set process_list "1"
+set voltage_list "1.08 1.2 1.32"
+set temperature_list "-40 25 125"
+set rc_corner_list "cworst cbest rcworst rcbest typical"
+set analysis_list "setup hold"
+
+foreach mode $mode_list {
+  create_mode $mode
+}
+
+set corner_list ""
+foreach process $process_list {
+    foreach voltage $voltage_list {
+        foreach temperature $temperature_list {
+            foreach rc_corner $rc_corner_list {
+                foreach analysis $analysis_list {
+                    lappend corner_list "${process}_${voltage}_${temperature}_${rc_corner}_${analysis}"
+                    create_corner ${process}_${voltage}_${temperature}_${rc_corner}_${analysis}
+                }
+            }
+        }
+    }
+}
+
+foreach mode $mode_list {
+    foreach corner $corner_list {
+        create_scenario -name ${mode}_${corner} -mode $mode -corner $corner
+    }
+}
+
+foreach_in_collection scenario [get_scenarios - mode function] {
+    current_scenario $scenario
+    rm_source -file scanned.sdc
+}
+
+foreach_in_collection scenario [get_scenarios - mode capture] {
+    current_scenario $scenario
+    rm_source -file aptg_capture.sdc
+}
+
+foreach_in_collection scenario [get_scenarios - mode shift] {
+    current_scenario $scenario
+    rm_source -file aptg_shift.sdc
+}
+
+foreach_in_collection scenario [get_scenarios - mode mbist] {
+    current_scenario $scenario
+    rm_source -file mbist.sdc
+}
+
+foreach_in_collection scenario [all_scenarios] {
+    current_scenario $scenario
+
+    set process [lindex [spilt [get_object_name [current_corner]] _] 0]
+    set voltage [lindex [spilt [get_object_name [current_corner]] _] 1]
+    set temperature [lindex [spilt [get_object_name [current_corner]] _] 2]
+    set rc_corner [lindex [spilt [get_object_name [current_corner]] _] 3]
+    set analysis [lindex [spilt [get_object_name [current_corner]] _] end]
+    
+    set_process_number -early $process -late $process
+
+    set_voltage $voltage -min $voltage
+    set_voltage $voltage -min $voltage -object_list VDDK
+    set_voltage 0 -min 0 -object_list GNDK
+
+    set_temperature $temperature -min $temperature
+
+    set_parasitic_parameters -earlt_spec $rc_corner -late_spec $rc_corner -early_temperature $temperature -late_temperature $temperature
+    
+    if {$voltage == "1.08" && $analysis == "setup"} {
+        set_timing_derate -late -clock 1 -cell_delay
+        set_timing_derate -late -data 1 -cell_delay
+        set_timing_derate -early 0 clock 0.929 -cell_delay
+        set_timing_derate -late -clock 1 -net_delay
+        set_timing_derate -late -data 1 -net_delay
+        set_timing_derate -early 0 clock 0.929 -net_delay
+    }
+
+    if {$voltage == "1.08" && $analysis == "hold"} {
+        set_timing_derate -early -clock 0.861 -cell_delay
+        set_timing_derate -early -data 0.861 -cell_delay
+        set_timing_derate -late 0 clock 1 -cell_delay
+        set_timing_derate -early -clock 0.861 -net_delay
+        set_timing_derate -early -data 0.861 -net_delay
+        set_timing_derate -late 0 clock 1 -net_delay
+    }
+    
+    if {$voltage == "1.32" && $analysis == "hold"} {
+        set_timing_derate -early -clock 1 -cell_delay
+        set_timing_derate -early -data 1 -cell_delay
+        set_timing_derate -late 0 clock 1.151 -cell_delay
+        set_timing_derate -early -clock 1 -net_delay
+        set_timing_derate -early -data 1 -net_delay
+        set_timing_derate -late 0 clock 1.151 -net_delay
+    }
+
+    set_clock_uncertainty -setup 0.3 [all_clocks]
+    set_clock_uncertainty -seholdtup 0.3 [all_clocks]
+
+    if {$analysis == "setup"} {
+        set_scenario_status $scenario -none -setup true -hold false -leakage_power true -dynamic_power true -max_transition true -max_capacitance true -min_capacitance false -active true
+    }
+    if {$analysis == "hold"} {
+        set_scenario_status $scenario -none -setup false -hold true -leakage_power true -dynamic_power false -max_transition true -max_capacitance false -min_capacitance true -active true
+    }
+}
 ```
 
 ### init_design.parasitic_setup.tcl
 
 ```text
-待展開
-```
+set parasitic1 "cworst"
+set tluplus_file($parasitic1) "cworst.tlu+"
+set layer_map_file($parasitic1) "mapping_gate"
 
-### set_timing_derate.tcl
+set parasitic2 "cbest"
+set tluplus_file($parasitic2) "cbest.tlu+"
+set layer_map_file($parasitic2) "mapping_gate"
 
-```text
-待展開
+set parasitic3 "rcworst"
+set tluplus_file($parasitic3) "rcworst.tlu+"
+set layer_map_file($parasitic3) "mapping_gate"
+
+set parasitic4 "rcbest"
+set tluplus_file($parasitic4) "rcbest.tlu+"
+set layer_map_file($parasitic4) "mapping_gate"
+
+set parasitic5 "typical"
+set tluplus_file($parasitic5) "typical.tlu+"
+set layer_map_file($parasitic5) "mapping_gate"
+
+foreach p [array name tluplus_file] {
+    read_parasitic_tech -tlup $tluplus_file($p) -layermap $layer_map_file($p) -name $p
+}
 ```
 
 ## rm_user_plugin_scripts 資料夾設定
@@ -219,10 +380,10 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 - pns_strategies.tcl
 - shaping_constraints.tcl
 
-## Design Planning 流程圖 (FLAT)
+## Design Planning FLAT 流程
 
 ```mermaid
-flowchart TD
+flowchart LR
     setup["setup"] --> init_design_dp["init_design_dp"]
     init_design_dp --> create_floorplan["create_floorplan"]
     create_floorplan --> create_power["create_power"]
@@ -231,10 +392,10 @@ flowchart TD
     write_data_dp --> all_dp["all_dp"]
 ```
 
-## Design Planning 流程圖 (HIER)
+## Design Planning HIER 流程
 
 ```mermaid
-flowchart TD
+flowchart LR
     setup["setup"] --> init_dp["init_dp"]
     init_dp --> commit_blocks["commit_blocks"]
     commit_blocks --> expand_outline["expand_outline"] & split_constraints["split_constraints"]
@@ -249,10 +410,10 @@ flowchart TD
     write_data_dp --> all["all"]
 ```
 
-## Block-level Implementation 流程圖
+## Block-level Implementation 流程
 
 ```mermaid
-flowchart TD
+flowchart LR
     setup["setup"] --> init_design["init_design"]
     init_design --> place_opt["place_opt"]
     place_opt --> clock_opt_cts["clock_opt_cts"]
