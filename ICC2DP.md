@@ -1,6 +1,6 @@
 # IC Compiler II Reference Methodology
 
-## 目錄結構設定
+## 基本設定
 
 ```mermaid
 flowchart TD
@@ -13,7 +13,7 @@ flowchart TD
     APR --> tech[tech]
 ```
 
-Reference Methodology 取得方式，前往 [https://solvnet.synopsys.com/rmgen](https://solvnet.synopsys.com/rmgen) 需有企業驗證帳號方能下載；或者在 icc2 目錄下啟動圖形介面，點選 Help → Generate RM Scripts → I agree to the above Terms and Conditions → I agree → OK 。當前路徑底下輸入 **tar zxvf ICC2-RM_*.tar.gz** 解壓縮。解壓縮完畢後進入資料夾內先建立 design.cfg 檔案，根據需求去調整檔案內容。假設電路邏輯架構如下圖
+ 前往 [https://solvnet.synopsys.com/rmgen](https://solvnet.synopsys.com/rmgen) 需有企業驗證帳號方能下載 Reference Methodology；或者在 icc2 目錄下啟動圖形介面，點選 Help → Generate RM Scripts → I agree to the above Terms and Conditions → I agree → OK 。當前路徑底下輸入 **tar zxvf ICC2-RM_*.tar.gz** 解壓縮。解壓縮完畢後進入資料夾內先建立 design.cfg 檔案，根據需求去調整檔案內容。假設電路邏輯架構如下圖
 
 ```mermaid
 treemap-beta
@@ -73,17 +73,16 @@ flowchart TD
 
 完成後到 APR/icc2/ICC2-RM_* 底下。執行 **ln -s ../../tech rm_tech_scripts** 命令建立 rm_tech_scripts 捷徑指到 tech 資料夾。
 
-## rm_setup 資料夾設定
+### rm_setup 資料夾設定
 
 rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 查看支援編輯的檔案列表。輸入 configureRM --in ../rm_setup/design_setup.tcl 可以編輯檔案，需要修改下列檔案
 
 - [Makefile_*](#makefile_)
 - [design_setup.tcl](#design_setuptcl)
 - [header_icc2_*.tcl](#header_icc2_tcl)
-- [icc2_dp_setup.tcl](#icc2_dp_setuptcl)
 - [sidefile_setup.tcl](#sidefile_setuptcl)
 
-### Makefile_*
+#### Makefile_*
 
 根據啟動環境編輯 Makefile 內容以符合環境設定，使用 **which** 指令查詢全路徑後修改
 
@@ -95,16 +94,13 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
  DESIGN_LIB := $(subst $\",,$(shell expand rm_setup/design_setup.tcl | grep "^set DESIGN_NAME" | awk '{print $$3}'))
 ```
 
-### design_setup.tcl
+#### design_setup.tcl
 
 | 項目 | 變數 | 數值 | 說明 |
 | --- | --- | --- | --- |
-| GENERAL | DESIGN_NAME | module_name | unpack_rm_dir.pl 根據 design.cfg 內容自動修改 |
-| DESIGN PLANNING SETUP | DESIGN_STYLE | flat | unpack_rm_dir.pl 根據 design.cfg 架構自動修改 |
-| DESIGN PLANNING SETUP | PHYSICAL_HIERARCHY_LEVEL | bottom | unpack_rm_dir.pl 根據 design.cfg 架構自動修改 |
 | DESIGN PLANNING SETUP | SUB_BLOCK_LIBRARIES | 填寫 block 路徑 | 在 PNR 階段 TOP 需要設定完成的 block 資料夾所在位置 |
 | DESIGN PLANNING SETUP | USE_ABSTRACTS_FOR_BLOCKS | 填寫 block 名稱 | 在 PNR 階段 TOP 需要設定完成的 block module_name |
-| DESIGN PLANNING SETUP | BLOCK_AABSTRACT_FOR_* | $ICV_IN_DESIGN_BLOCK_NAME abstract | 修改為各步驟階段變數名稱 |
+| DESIGN PLANNING SETUP | BLOCK_ABSTRACT_FOR_* | $ICV_IN_DESIGN_BLOCK_NAME abstract | 修改為各步驟階段變數名稱 |
 | LIBRARY SETUP | REFERENCE_LIBRARY | *.ndm | 填入NDM 所在位置 STD_NDM 要在最前面 |
 | LIBRARY SETUP | TCL_MULTI_VT_CONSTRAINT_FILE | multi_vth_constraint_script.tcl | 編輯 rm_user_plugin_scripts 裡的檔案，修改 HVT SVT LVT 名稱與 LVT % 數 |
 | LIBRARY SETUP | TIE_LIB_CELL_PATTERN_LIST | */*TIE* |TIE CELL 名稱 |
@@ -130,7 +126,7 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | PHYSICAL INPUTS | SWITCH_CONNECTIVITY_FILE | switch_connectivity.tcl | 複製 examples/TCL_MV_SETUP_FILE.tcl 至 floorplan 裡並只留下 connect_power_switch 相關指令 |
 | USER PLUGIN SCRIPTS| TCL_USER_WRITE_DATA_POST_SCRIPT | write_data_post_script.tcl | 於 rm_user_plugin_scripts 新建檔案，並客製化寫出項目 |
 
-### header_icc2_*.tcl
+#### header_icc2_*.tcl
 
 修改 **set search_path** 加入自訂額外搜尋路徑，例如：./design ./floorplan
 
@@ -138,35 +134,14 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_icc2_dp_flat_scripts ./rm_icc2_dp_hier_scripts ./rm_icc2_pnr_scripts ./rm_setup ./examples $WORK_DIR]
 ```
 
-### icc2_dp_setup.tcl
-
-| 項目 | 變數 | 數值 | 說明 |
-| --- | --- | --- | --- |
-| GENERAL | DP_FLOW | flat | unpack_rm_dir.pl 根據 design.cfg 架構自動修改 |
-| GENERAL | TCL_FLOORPLAN_FILE_DP | floorplan.tcl | Design Planning 專用 floorplan 請自行設計 |
-| GENERAL | DP_HIGH_CAPACITY_MODE | false | 決定 verilog 讀取模式，設 true 為 outline 模式；設 false 為 design 模式 |
-| GENERAL | FLOORPLAN_STYLE | abutted | 管道模式 (channel) 或緊鄰模式 (abutted) |
-| GENERAL | DISTRIBUTED | false | 設 true 為分散式運算模式；設 false 為一般主機模式 |
-| GENERAL | SUB_BLOCK_REFS | 各 HIER module 名稱 | unpack_rm_dir.pl 根據 design.cfg 架構自動修改 |
-| GENERAL | TCL_TIMING_RULER_SETUP_FILE | init_design.parasitic_setup.tcl | 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
-| GENERAL | TCL_SHAPING_CONSTRAINTS_FILE | shaping_constraints.tcl | 設定 vlotage area 和 shaping constraints |
-| GENERAL | TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE | auto_placement_constraints.tcl | 設定 keepout_margin 和 macro 擺放方向 |
-| GENERAL | CONGESTION_DRIVEN_PLACEMENT | macro | 建議設定 |
-| GENERAL | TIMING_DRIVEN_PLACEMENT | std_cell | 建議設定 |
-| GENERAL | MACRO_CONSTRAINT_STYLE | edge | 建議設定 |
-| GENERAL | TCL_PNS_FILE | pns_strategies.tcl | 設定 power 和 ground 佈線範圍與佈線條件 |
-| GENERAL | PNS_CHARACTERIZE_FLOW | false | 設 true 各 block 重複執行 TCL_COMPILE_PG_FILE 內容；設 false 上層 power 和 ground 佈線壓進 block 內 |
-| GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 此處設定無用，被 sidefile_setup.tcl 的 TCL_COMPILE_PG_FILE 設定覆蓋 |
-| GENERAL | TCL_PIN_CONSTRAINT_FILE | pins_constraints.tcl | 設定 feedthrough 條件與允許使用的 layer |
-
-### sidefile_setup.tcl
+#### sidefile_setup.tcl
 
 | 項目 | 變數 | 數值 | 說明 |
 | --- | --- | --- | --- |
 | GENERAL | ROUTING_LAYER_DIRECTION_OFFSET_LIST | {ME1 horizontal} {ME2 vertical} | 修改繞線方向 |
 | GENERAL | MIN_ROUTING_LAYER | ME1 | 繞線底層 layer |
 | GENERAL | MAX_ROUTING_LAYER  |ME5 | 繞線頂層 layer |
-| GENERAL | TCL_USER_CONNECT_PG_NET_SCRIPT | user_connect_pg_net.tcl | 自定義 cell power & ground 連接 |
+| GENERAL | TCL_USER_CONNECT_PG_NET_SCRIPT | user_connect_pg_net.tcl | 自定義 cell power & ground spcice 連接，有 upf 時可不用設定 |
 | GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 自定義 power & ground 佈線 |
 | GENERAL | TCL_LIB_CELL_DONT_USE_FILE | dont_use.tcl | 定義不使用 cell |
 | GENERAL | TCL_CTS_NDR_RULE_FILE | [cts_ndr.tcl](#cts_ndrtcl) | 複製 examples/cts_ndr.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
@@ -174,7 +149,7 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 | GENERAL | CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST | */FIL4U |填入無電容 FILER 名稱由大到小 |
 | GENERAL | WRITE_GDS_LAYER_MAP_FILE | streamout.map | 轉 GDS 對 layer 用 |
 
-## rm_icc2_pnr_scripts 資料夾設定
+### rm_icc2_pnr_scripts 資料夾設定
 
 需要建立或修改下列檔案
 
@@ -182,7 +157,7 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 - [init_design.memm_setup.tcl](#init_designmemm_setuptcl) 複製 examples/TCL_MCMM_SETUP_FILE.auto_expanded.tcl 修改
 - [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 修改
 
-### cts_ndr.tcl
+#### cts_ndr.tcl
 
 | 項目 | 變數 | 數值 | 說明 |
 | --- | --- | --- | --- |
@@ -190,7 +165,7 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 | GENERAL | CTS_NDR_MIN_ROUTING_LAYER | ME3 | 修改繞線最小層數 |
 | GENERAL | CTS_NDR_MAX_ROUTING_LAYER | ME5 | 修改繞線最大層數 |
 
-### init_design.memm_setup.tcl
+#### init_design.memm_setup.tcl
 
 ```mermaid
 classDiagram
@@ -342,7 +317,7 @@ foreach_in_collection scenario [all_scenarios] {
 }
 ```
 
-### init_design.parasitic_setup.tcl
+#### init_design.parasitic_setup.tcl
 
 ```text
 set parasitic1 "cworst"
@@ -370,16 +345,6 @@ foreach p [array name tluplus_file] {
 }
 ```
 
-## rm_user_plugin_scripts 資料夾設定
-
-需要建立或修改下列檔案
-
-- auto_placement_constraints.tcl
-- compile_pg.tcl
-- pin_constraints.tcl
-- pns_strategies.tcl
-- shaping_constraints.tcl
-
 ## Design Planning FLAT 流程
 
 ```mermaid
@@ -390,6 +355,195 @@ flowchart LR
     create_power --> place_pins["place_pins"]
     place_pins --> write_data_dp["write_data_dp"]
     write_data_dp --> all_dp["all_dp"]
+```
+
+### rm_setup 資料夾設定 (FLAT)
+
+- [icc2_dp_setup.tcl](#icc2_dp_setuptcl-flat)
+- [sidefile_setup.tcl](#sidefile_setuptcl-flat)
+
+#### icc2_dp_setup.tcl (FLAT)
+
+| 項目 | 變數 | 數值 | 說明 |
+| --- | --- | --- | --- |
+| GENERAL | INITIALIZE_FLOORPLAN_UTIL |  | 清除內容不使用 util 模式，將使用 BOUNDARY 形式 |
+| GENERAL | INITIALIZE_FLOORPLAN_BOUNDARY | {0 0} {x y} | 使用 x y 設定 DIE 大小 |
+| GENERAL | INITIALIZE_FLOORPLAN_CORE_OFFSET | 0 0 | 設定為 0 0，使 CORE 可以擺到 DIE 邊緣 |
+| GENERAL | TCL_PHYSICAL_CONSTRAINTS_FILE | physical_constraints.tcl | 設定 macro placement、blockages、voltage area |
+| GENERAL | TCL_MV_SETUP_FILE | init_design.mv_setup.tcl | 複製 examples/TCL_MV_SETUP_FILE.tcl 至 rm_user_plugin_scripts 裡並修改內容 |
+| GENERAL | TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE | auto_placement_constraints.tcl | 設定 keepout_margin 和 macro 擺放方向 |
+| GENERAL | CONGESTION_DRIVEN_PLACEMENT | macro | 建議設定 |
+| GENERAL | TIMING_DRIVEN_PLACEMENT | std_cell | 建議設定 |
+| GENERAL | MACRO_CONSTRAINT_STYLE | on_edge | 建議設定 |
+| GENERAL | TCL_PNS_FILE | pns_strategies.tcl | 設定 power 和 ground 佈線範圍與佈線條件 |
+| GENERAL | TCL_COMPILE_PG_FILE |  | 此處設定無用，被 sidefile_setup.tcl 的 TCL_COMPILE_PG_FILE 設定覆蓋 |
+| GENERAL | TCL_PIN_CONSTRAINT_FILE | pins_constraints.tcl | 設定 pin 條件與允許使用的 layer |
+
+#### sidefile_setup.tcl (FLAT)
+
+| 項目 | 變數 | 數值 | 說明 |
+| --- | --- | --- | --- |
+| GENERAL | SIDEFILE_CREATE_FLOORPLAN_FLAT_BOUNDARY_CELLS | boundary_cells.tcl | 設定 bounadry cell 擺放 |
+| GENERAL | SIDEFILE_CREATE_FLOORPLAN_FLAT_TAP_CELLS | tap_cells.tcl | 設定 tap cell 擺放 |
+| GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 設定 pg 方式 |
+
+### rm_user_plugin_scripts 資料夾設定 (FLAT)
+
+需要建立下列檔案
+
+- [auto_placement_constraints.tcl](#auto_placement_constraintstcl)
+- [boundary_cells.tcl](#boundary_cellstcl)
+- [compile_pg.tcl](#compile_pgtcl)
+- [init_design.mv_setup.tcl](#init_designmv_setuptcl)
+- [physical_constraints.tcl](#physical_constraintstcl)
+- [pin_constraints.tcl](#pin_constraintstcl)
+- [pns_strategies.tcl](#pns_strategiestcl)
+- [tap_cells.tcl](#tap_cellstcl)
+
+#### auto_placement_constraints.tcl
+
+```text
+set_app_options -name plan.place.auto_create_blockages -value none
+set_app_options -name plan.place.auto_generate_blockages -value false
+set_macro_constraints -allowed_orientations {R0 R90 R180 R270 MX MXR90 MY MYR90} [get_cells * -physical_context -filter {is_memory_cell == true}]
+```
+
+#### boundary_cells.tcl
+
+```text
+#remove_cells [get_cells * -physical_context -filter {ref_name =~ FILLER4}]
+set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4]
+compile_boundary_cells
+check_boundary_cells
+
+set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4] -at_va_boundary
+compile_targeted_boundary_cells -target_objects [get_voltage_area {PD_OFF}]
+check_targeted_boundary_cells
+```
+
+#### compile_pg.tcl
+
+```text
+compile_pg -strategies {ring_pat}
+compile_pg -strategies {rail_strat} -via_rule rail_via_rule
+compile_pg -strategies {mesh_strat_on mesh_strat_off} -via_rule mesh_via_rule
+```
+
+#### init_design.mv_setup.tcl
+
+```text
+create_power_switch_array -power_switch PSW -x_pitch 48.72 -y_pitch 1.26 -voltage_area PD_OFF
+connect_power_switch -source sw_on -port_name sw_on -mode vertical -voltage_area PD_OFF -start_point bottom
+associate_mv_cells -power_switches
+connect_pg_net -automatic
+create_pg_vias -nets VDDC -from_types pwrswitch_pin -to_types stripe -from_layers ME1 -to_layers ME5
+```
+
+#### physical_constraints.tcl
+
+```text
+set_fixed_objects [get_cells * -physical_context -filter {is_io == true}]
+
+create_voltage_area -power_domains PD_OFF -is_fixed -region {{0 0} {x y}} -guard_band {{2 2}}
+
+create_voltage_area_rule -name default_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthorugh false -allow_logical_feedthrough false
+create_voltage_area_rule -name off_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthorugh true -allow_logical_feedthrough true -voltage_areas PD_OFF
+
+crate_keepout_margin -type hard_macro -outer {left bottom right top} [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_placement_blockage -type hard_macro -boundary {{0 0}{x y}} -name PM
+
+crate_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_macro 2 [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_placement_blockage -type hard -boundary {{0 0}{x y}} -name PB
+```
+
+#### pin_constraints.tcl
+
+```text
+create_pin_constraint -type individual -layers [get_layers {ME2 ME3}] -nets [get_nets clk] offset {10% 40%} -side 3
+```
+
+#### pns_strategies.tcl
+
+```text
+crate_keep_margin -type routing_blockage -outer {2 2 2 2} -layers {ME1 ME2 ME3 ME4} [get_cells * -physical_context -filter {is_memory_cell == true}]
+
+#remove_pg_regions -all
+create_pg_region {pg_core} -polygon {{0 0} {x1 y1} {x2 y2} ... {x? y?}}
+
+#remove_pg_patterns -all
+create_pg_ring_pattern ring_pat -horizontal_layer {ME1} -horizontal_width {5} -horizontal_spacing {2} -vertical_layer {ME3} -vertical_wodth {5} -vertical_spacing {2}
+create_pg_std_cell_conn_pattern rail_pat -layer {ME1 ME2} -rail_width 0.07
+
+##############################################################################################################
+#       VDD         OFF         VSS         VDD         OFF         VSS         VDD         OFF         VSS
+#width  1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12
+#space          7           7           7           7           7           7           7           7
+#       pwrsw                                                                   pwrsw
+##############################################################################################################
+#VDD to VSS spacing = 7 + 1.12 + 7 = 15.12
+#VDD to VDD pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 24.36
+#pwrse pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 48.72
+##############################################################################################################
+#       VDD         OFF         VSS         VDD         OFF         VSS         VDD         OFF         VSS
+#width  5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88
+#space      2.24        2.24        2.24        2.24        2.24        2.24        2.24        2.24
+#       pwrsw                                                                   pwrsw
+##############################################################################################################
+#VDD to VSS spacing = 2.24 + 5.88 + 2.24 = 10.36
+#VDD to VDD pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 24.36
+#pwrse pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 48.72
+##############################################################################################################
+
+create_pg_mesh_pattern mesh_pat -layers { \
+    {{vertical_layer:ME5}{width:1.12}{spacing:interleaving}{pitch:24.36}{trim:false}} \
+    {{horizontal_layer:ME6}{width:1.12}{spacing:interleaving}{pitch:24.36}{trim:false}} \
+    {{vertical_layer:ME7}{width:5.88}{spacing:interleaving}{pitch:24.36}{trim:false}} \
+    {{horizontal_layer:AP}{width:5.88}{spacing:interleaving}{pitch:24.36}{trim:false}} \
+} -via_rule { \
+    {{layer:ME5}{layers:ME6}{via_master:default}} \
+    {{layer:ME7}{layers:AP}{via_master:default}} \
+    {{intersection: undefined} {via_master: NIL}} \
+}
+
+#remove_pg_strategies all
+set_pg_strategy ring_strat -pg_regions pg_core -pattern {{name:ring_pat}{nets:VDD VSS}}
+set_pg_strategy rail_strat -pg_regions pg_core -pattern {{name:rail_pat}{nets:VDD VSS}}
+
+#       VDD         VDD         VSS
+set_pg_strategy mesh_strat_on -voltage_areas {DEFAULT_VA} -pattern {{name:mesh_pat}{nets:VDD VDD VSS}} -blockage {voltage_areas:PD_OFF}
+#       VDDX         OFF         VSS
+set_pg_strategy mesh_strat_off -voltage_areas {PD_OFF} -pattern {{name:mesh_pat}{nets:VDD OFF VSS}} -blockage {voltage_areas:DEFAULT_VA}
+
+#remove_pg_strategy_via_rules -all
+set_pg_strategy_via_rule rail_via_rule -via_rule {{intersection:all}{via_master:NIL}}
+set_pg_strategy_via_rule mesh_via_rule -via_rule { \
+    { \
+        {{strategies:{mesh_strat_on mesh_strat_off}}{layers:ME5}} \
+        {{existing:std_conn}{layers:ME2}} \
+        {via_master:default} \
+    } \
+    {{intersection:undefined}{via_master:NIL}} \
+}
+```
+
+#### tap_cells.tcl
+
+```text
+#remove_cells [get_cells * -physical_context -filter {ref_name =~ TAP}]
+create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area PD_OFF -offset 24.36 -skip_fixed_cells
+connect_pg_net -net OFF [get_pins */VDD -physical_context -filter {power_domain == PD_OFF}]
+connect_pg_net -net VDD [get_pins */VDDR -physical_context -filter {power_domain == PD_OFF}]
+
+create_pg_special_pattern tap_pat -insert_physical_cell_alignment_straps {{lib_cells:TAP}{layer:ME2}{width:0.07}{direction:horizontal}{pin_layers:ME2}}
+set memory_list [get_cells * -physical_context -filter "is_memory_cell ==true"]
+set_pg_strategy tap_off -voltage_area PD_OFF -pattern {{name:tap_pat}{nets:{VDD}}} -blockage {{{layers:{ME1 ME2}}{macros_with_keepout:$memory_list}}}
+set_pg_strategy_via_rule tap_via -via_rule { \
+    { \
+        {{existing:strap}{layers:{ME5}}} \
+        {via_master:{VIA12_cut VIA23_cut VIA34_cut VIA45_cut}} \
+    }
+}
+compile_pg -straegies {tap_off} -via_rule tap_via
 ```
 
 ## Design Planning HIER 流程
@@ -409,6 +563,40 @@ flowchart LR
     time_budget --> write_data_dp["write_data_dp"]
     write_data_dp --> all["all"]
 ```
+
+### rm_setup 資料夾設定 (HIER)
+
+#### icc2_dp_setup.tcl (HIER)
+
+| 項目 | 變數 | 數值 | 說明 |
+| --- | --- | --- | --- |
+| GENERAL | INITIALIZE_FLOORPLAN_UTIL |  | 清除內容不使用 util 模式，將使用 BOUNDARY 形式 |
+| GENERAL | INITIALIZE_FLOORPLAN_BOUNDARY | {0 0} {x y} | 使用 x y 設定 DIE 大小 |
+| GENERAL | INITIALIZE_FLOORPLAN_CORE_OFFSET | 0 0 | 設定為 0 0，使 CORE 可以擺到 DIE 邊緣 |
+| GENERAL | DP_HIGH_CAPACITY_MODE | false | 決定 verilog 讀取模式，設 true 為 outline 模式；設 false 為 design 模式 |
+| GENERAL | FLOORPLAN_STYLE | abutted | 管道模式 (channel) 或緊鄰模式 (abutted) |
+| GENERAL | DISTRIBUTED | false | 設 true 為分散式運算模式；設 false 為一般主機模式 |
+| GENERAL | TCL_TIMING_RULER_SETUP_FILE | init_design.parasitic_setup.tcl | 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
+| GENERAL | TCL_PAD_CONSTRAINTS_FILE | pad_constraints.tcl | 設定 pad 位置 |
+| GENERAL | TCL_SHAPING_CONSTRAINTS_FILE | shaping_constraints.tcl | 設定 vlotage area 和 shaping constraints |
+| GENERAL | TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE | auto_placement_constraints.tcl | 設定 keepout_margin 和 macro 擺放方向 |
+| GENERAL | CONGESTION_DRIVEN_PLACEMENT | macro | 建議設定 |
+| GENERAL | TIMING_DRIVEN_PLACEMENT | std_cell | 建議設定 |
+| GENERAL | MACRO_CONSTRAINT_STYLE | on_edge | 建議設定 |
+| GENERAL | TCL_PNS_FILE | pns_strategies.tcl | 設定 power 和 ground 佈線範圍與佈線條件 |
+| GENERAL | PNS_CHARACTERIZE_FLOW | false | 設 true 各 block 重複執行 TCL_COMPILE_PG_FILE 內容；設 false 上層 power 和 ground 佈線壓進 block 內 |
+| GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 此處設定無用，被 sidefile_setup.tcl 的 TCL_COMPILE_PG_FILE 設定覆蓋 |
+| GENERAL | TCL_PIN_CONSTRAINT_FILE | pins_constraints.tcl | 設定 feedthrough 條件與允許使用的 layer |
+
+### rm_user_plugin_scripts 資料夾設定 (HIER)
+
+需要建立下列檔案
+
+- auto_placement_constraints.tcl
+- compile_pg.tcl
+- pin_constraints.tcl
+- pns_strategies.tcl
+- shaping_constraints.tcl
 
 ## Block-level Implementation 流程
 
