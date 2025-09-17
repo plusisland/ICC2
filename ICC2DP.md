@@ -163,7 +163,7 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 | --- | --- | --- | --- |
 | GENERAL | CTS_NDR_RULE_NAME | rm_2w2s | 指定 clock root nets 要使用的規則 rm_2w2s、rm_2w2s_shield_default、rm_2w2s_shield_list |
 | GENERAL | CTS_NDR_MIN_ROUTING_LAYER | ME3 | 修改繞線最小層數 |
-| GENERAL | CTS_NDR_MAX_ROUTING_LAYER | ME5 | 修改繞線最大層數 |
+| GENERAL | CTS_NDR_MAX_ROUTING_LAYER | ME6 | 修改繞線最大層數 |
 
 #### init_design.memm_setup.tcl
 
@@ -271,8 +271,8 @@ foreach_in_collection scenario [all_scenarios] {
     set_process_number -early $process -late $process
 
     set_voltage $voltage -min $voltage
-    set_voltage $voltage -min $voltage -object_list VDDK
-    set_voltage 0 -min 0 -object_list GNDK
+    set_voltage $voltage -min $voltage -object_list VDD
+    set_voltage 0 -min 0 -object_list VSSD
 
     set_temperature $temperature -min $temperature
 
@@ -369,12 +369,12 @@ flowchart LR
 | GENERAL | INITIALIZE_FLOORPLAN_UTIL |  | 清除內容不使用 util 模式，將使用 BOUNDARY 形式 |
 | GENERAL | INITIALIZE_FLOORPLAN_BOUNDARY | {0 0} {x y} | 使用 x y 設定 DIE 大小 |
 | GENERAL | INITIALIZE_FLOORPLAN_CORE_OFFSET | 0 0 | 設定為 0 0，使 CORE 可以擺到 DIE 邊緣 |
+| GENERAL | TCL_USER_PLACE_PINS_INIT_POST_SCRIPT | place_pins_init_post.tcl | 修正 port 位置 |
 | GENERAL | TCL_PHYSICAL_CONSTRAINTS_FILE | physical_constraints.tcl | 設定 macro placement、blockages、voltage area |
 | GENERAL | TCL_MV_SETUP_FILE | init_design.mv_setup.tcl | 複製 examples/TCL_MV_SETUP_FILE.tcl 至 rm_user_plugin_scripts 裡並修改內容 |
 | GENERAL | TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE | auto_placement_constraints.tcl | 設定 keepout_margin 和 macro 擺放方向 |
 | GENERAL | CONGESTION_DRIVEN_PLACEMENT | macro | 建議設定 |
 | GENERAL | TIMING_DRIVEN_PLACEMENT | std_cell | 建議設定 |
-| GENERAL | MACRO_CONSTRAINT_STYLE | on_edge | 建議設定 |
 | GENERAL | TCL_PNS_FILE | pns_strategies.tcl | 設定 power 和 ground 佈線範圍與佈線條件 |
 | GENERAL | TCL_COMPILE_PG_FILE |  | 此處設定無用，被 sidefile_setup.tcl 的 TCL_COMPILE_PG_FILE 設定覆蓋 |
 | GENERAL | TCL_PIN_CONSTRAINT_FILE | pins_constraints.tcl | 設定 pin 條件與允許使用的 layer |
@@ -385,6 +385,7 @@ flowchart LR
 | --- | --- | --- | --- |
 | GENERAL | SIDEFILE_CREATE_FLOORPLAN_FLAT_BOUNDARY_CELLS | boundary_cells.tcl | 設定 bounadry cell 擺放 |
 | GENERAL | SIDEFILE_CREATE_FLOORPLAN_FLAT_TAP_CELLS | tap_cells.tcl | 設定 tap cell 擺放 |
+| GENERAL | TCL_USER_CONNECT_PG_NET_SCRIPT | connect_pg_net.tcl | 設定 pg 連接 |
 | GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 設定 pg 方式 |
 
 ### rm_user_plugin_scripts 資料夾設定 (FLAT)
@@ -394,15 +395,17 @@ flowchart LR
 - [auto_placement_constraints.tcl](#auto_placement_constraintstcl)
 - [boundary_cells.tcl](#boundary_cellstcl)
 - [compile_pg.tcl](#compile_pgtcl)
+- [connect_pg_net.tcl](#connect_pg_nettcl)
 - [init_design.mv_setup.tcl](#init_designmv_setuptcl)
 - [physical_constraints.tcl](#physical_constraintstcl)
-- [pin_constraints.tcl](#pin_constraintstcl)
+- [place_pins_init_post.tcll](#place_pins_init_posttcl)
 - [pns_strategies.tcl](#pns_strategiestcl)
 - [tap_cells.tcl](#tap_cellstcl)
 
 #### auto_placement_constraints.tcl
 
 ```text
+set_app_options -name plan.place.continue_on_error -value true
 set_app_options -name plan.place.auto_create_blockages -value none
 set_app_options -name plan.place.auto_generate_blockages -value false
 set_macro_constraints -allowed_orientations {R0 R90 R180 R270 MX MXR90 MY MYR90} [get_cells * -physical_context -filter {is_memory_cell == true}]
@@ -424,25 +427,46 @@ check_targeted_boundary_cells
 #### compile_pg.tcl
 
 ```text
-compile_pg -strategies {ring_pat}
-compile_pg -strategies {rail_strat} -via_rule rail_via_rule
+compile_pg -strategies ring_strat
+compile_pg -strategies {rail_strat_vss rail_strat_vdd rail_strat_off} -via_rule rail_via_rule
+compile_pg -straegies {tap_off} -via_rule tap_via
 compile_pg -strategies {mesh_strat_on mesh_strat_off} -via_rule mesh_via_rule
+```
+
+#### connect_pg_net.tcl
+
+```text
+create_port VDDK -direction inout -port_type power
+create_port GNDK -direction inout -port_type ground
+create_net VDDK -power
+create_net GNDK -ground
+connect_pg_net -net VDDK [get_ports VDDK]
+connect_pg_net -net GNDK [get_ports GNDK]
+connect_pg_net -net VDDK [get_flat_pins */VDD -all]
+connect_pg_net -net GNDK [get_flat_pins */VSS -all]
+connect_pg_net -net VDDK [get_flat_pins */VBP -all]
+connect_pg_net -net GNDK [get_flat_pins */VBN -all]
 ```
 
 #### init_design.mv_setup.tcl
 
 ```text
-create_power_switch_array -power_switch PSW -x_pitch 48.72 -y_pitch 1.26 -voltage_area PD_OFF
-connect_power_switch -source sw_on -port_name sw_on -mode vertical -voltage_area PD_OFF -start_point bottom
+create_power_switch_array -power_switch PD_SW -lib_cell */SW_CELL_NAME -voltage_area PD_OFF -x_pitch 48.72 -y_pitch 1.26
+connect_power_switch -source PSW_ON -port_name SW_PORT -mode daisy -direction vertical -voltage_area PD_OFF
 associate_mv_cells -power_switches
+#connect_pg_net -net VDDK_SW_OFF [get_pins */VDDC -physical_context -filter {power_domain == PD_OFF}] #pw_vdd
+#connect_pg_net -net VDDK [get_flat_pins */VDDP -all] #pw_on
 connect_pg_net -automatic
-create_pg_vias -nets VDDC -from_types pwrswitch_pin -to_types stripe -from_layers ME1 -to_layers ME5
 ```
 
 #### physical_constraints.tcl
 
 ```text
+read_def IO.def
 set_fixed_objects [get_cells * -physical_context -filter {is_io == true}]
+
+read_def Analog_Macro.def
+set_fixed_objects [get_cells * -physical_context -filter {is_hard_macro == true}]
 
 create_voltage_area -power_domains PD_OFF -is_fixed -region {{0 0} {x y}} -guard_band {{2 2}}
 
@@ -456,23 +480,49 @@ crate_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_macr
 create_placement_blockage -type hard -boundary {{0 0}{x y}} -name PB
 ```
 
-#### pin_constraints.tcl
+#### place_pins_init_post.tcl
 
 ```text
-create_pin_constraint -type individual -layers [get_layers {ME2 ME3}] -nets [get_nets clk] offset {10% 40%} -side 3
+set unplaced_ports [get_ports -quiet -filter "port_type!=power && port_type!=ground"]
+foreach_in_collection port $unplaced_ports {
+    set port_net [get_nets of_objects $port]
+    set leaf_pin [get_pins -leaf of_objects $port_net]
+    set terminals [get_shapes -of_objects $leaf_pin]
+    foreach_in_collection terminal $terminals {
+        set pin_shape [get_attribute $terminal boundary]
+        set pin_layer [get_object_name [get_attribute $terminal layer]]
+        set shape_type [length $pin_shape]
+        if {$shape_type == 2} {
+            set shape_of_terminal [create_shape -shape_type rect -boundary $pin_shape -layer $pin_layer]
+        } else {
+            set shape_of_terminal [create_shape -shape_type polygon -boundary $pin_shape -layer $pin_layer]
+        }
+    }
+    crate_terminal -object $shape_of_terminal -port $port
+}
+remove_shapes [get_shapes -hierarchical -filter undefined(net)]
 ```
 
 #### pns_strategies.tcl
 
 ```text
-crate_keep_margin -type routing_blockage -outer {2 2 2 2} -layers {ME1 ME2 ME3 ME4} [get_cells * -physical_context -filter {is_memory_cell == true}]
+crate_keepout_margin -type routing_blockage -outer {2 2 2 2} -layers {ME1 ME2 ME3 ME4} [get_cells * -physical_context -filter {is_memory_cell == true}]
+
+#remove_routes -ring
+#remove_routes -stripe
+#remove_routes -macro_pin_connect
+#remove_routes -lib_cell_pin_connect
 
 #remove_pg_regions -all
 create_pg_region {pg_core} -polygon {{0 0} {x1 y1} {x2 y2} ... {x? y?}}
 
 #remove_pg_patterns -all
+
 create_pg_ring_pattern ring_pat -horizontal_layer {ME1} -horizontal_width {5} -horizontal_spacing {2} -vertical_layer {ME3} -vertical_wodth {5} -vertical_spacing {2}
+
 create_pg_std_cell_conn_pattern rail_pat -layer {ME1 ME2} -rail_width 0.07
+
+create_pg_special_pattern tap_pat -insert_physical_cell_alignment_straps {{lib_cells:TAP}{layer:ME2}{width:0.07}{direction:horizontal}{pin_layers:ME2}}
 
 ##############################################################################################################
 #       VDD         OFF         VSS         VDD         OFF         VSS         VDD         OFF         VSS
@@ -507,15 +557,32 @@ create_pg_mesh_pattern mesh_pat -layers { \
 
 #remove_pg_strategies all
 set_pg_strategy ring_strat -pg_regions pg_core -pattern {{name:ring_pat}{nets:VDD VSS}}
-set_pg_strategy rail_strat -pg_regions pg_core -pattern {{name:rail_pat}{nets:VDD VSS}}
 
-#       VDD         VDD         VSS
-set_pg_strategy mesh_strat_on -voltage_areas {DEFAULT_VA} -pattern {{name:mesh_pat}{nets:VDD VDD VSS}} -blockage {voltage_areas:PD_OFF}
-#       VDDX         OFF         VSS
-set_pg_strategy mesh_strat_off -voltage_areas {PD_OFF} -pattern {{name:mesh_pat}{nets:VDD OFF VSS}} -blockage {voltage_areas:DEFAULT_VA}
+set_pg_strategy rail_strat_vss -pg_regions pg_core -pattern {{name:rail_pat}{nets:VSS}}
+set_pg_strategy rail_strat_vdd -pg_regions pg_core -pattern {{name:rail_pat}{nets:VDD}} -blockage {voltage_areas:PD_OFF}
+set_pg_strategy rail_strat_off -voltage_areas PD_OFF -pattern {{name:rail_pat}{nets:OFF}}
+
+set memory_list [get_cells * -physical_context -filter "is_memory_cell ==true"]
+set_pg_strategy tap_off -voltage_area PD_OFF -pattern {{name:tap_pat}{nets:{VDD}}} -blockage {{{layers:{ME1 ME2}}{macros_with_keepout:$memory_list}}}
+
+#       VDD         X         VSS
+set_pg_strategy mesh_strat_top -pg_regions pg_core -pattern {{name:mesh_pat}{nets:{VDD - VSS}}}
+#       X         VDD         X
+set_pg_strategy mesh_strat_on -pg_regions pg_core -pattern {{name:mesh_pat}{nets:{- VDD -}}} -blockage {voltage_areas:PD_OFF}
+#       X         OFF         X
+set_pg_strategy mesh_strat_off -voltage_areas {PD_OFF} -pattern {{name:mesh_pat}{nets:{- OFF -}}{offset:{8.12 8.12}}{offset_start:boundary}} -blockage {voltage_areas:DEFAULT_VA}
 
 #remove_pg_strategy_via_rules -all
+
 set_pg_strategy_via_rule rail_via_rule -via_rule {{intersection:all}{via_master:NIL}}
+
+set_pg_strategy_via_rule tap_via -via_rule { \
+    { \
+        {{existing:strap}{layers:{ME5}}} \
+        {via_master:{VIA12_cut VIA23_cut VIA34_cut VIA45_cut}} \
+    }
+}
+
 set_pg_strategy_via_rule mesh_via_rule -via_rule { \
     { \
         {{strategies:{mesh_strat_on mesh_strat_off}}{layers:ME5}} \
@@ -531,19 +598,9 @@ set_pg_strategy_via_rule mesh_via_rule -via_rule { \
 ```text
 #remove_cells [get_cells * -physical_context -filter {ref_name =~ TAP}]
 create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area PD_OFF -offset 24.36 -skip_fixed_cells
+
 connect_pg_net -net OFF [get_pins */VDD -physical_context -filter {power_domain == PD_OFF}]
 connect_pg_net -net VDD [get_pins */VDDR -physical_context -filter {power_domain == PD_OFF}]
-
-create_pg_special_pattern tap_pat -insert_physical_cell_alignment_straps {{lib_cells:TAP}{layer:ME2}{width:0.07}{direction:horizontal}{pin_layers:ME2}}
-set memory_list [get_cells * -physical_context -filter "is_memory_cell ==true"]
-set_pg_strategy tap_off -voltage_area PD_OFF -pattern {{name:tap_pat}{nets:{VDD}}} -blockage {{{layers:{ME1 ME2}}{macros_with_keepout:$memory_list}}}
-set_pg_strategy_via_rule tap_via -via_rule { \
-    { \
-        {{existing:strap}{layers:{ME5}}} \
-        {via_master:{VIA12_cut VIA23_cut VIA34_cut VIA45_cut}} \
-    }
-}
-compile_pg -straegies {tap_off} -via_rule tap_via
 ```
 
 ## Design Planning HIER 流程
