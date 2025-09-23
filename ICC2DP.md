@@ -141,8 +141,8 @@ set search_path [list ./design ./floorplan ./rm_user_plugin_scripts ./rm_tech_sc
 | GENERAL | ROUTING_LAYER_DIRECTION_OFFSET_LIST | {ME1 horizontal} {ME2 vertical} | 修改繞線方向 |
 | GENERAL | MIN_ROUTING_LAYER | ME1 | 繞線底層 layer |
 | GENERAL | MAX_ROUTING_LAYER  |ME5 | 繞線頂層 layer |
-| GENERAL | TCL_USER_CONNECT_PG_NET_SCRIPT | user_connect_pg_net.tcl | 自定義 cell power & ground spcice 連接，有 upf 時可不用設定 |
-| GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 自定義 power & ground 佈線 |
+| GENERAL | TCL_USER_CONNECT_PG_NET_SCRIPT | connect_pg_net_script.tcl | 自定 power & ground 連接 |
+| GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 自定 power & ground 佈線 |
 | GENERAL | TCL_LIB_CELL_DONT_USE_FILE | dont_use.tcl | 定義不使用 cell |
 | GENERAL | TCL_CTS_NDR_RULE_FILE | [cts_ndr.tcl](#cts_ndrtcl) | 複製 examples/cts_ndr.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
 | GENERAL | CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST | */FILE64U |填入有電容 FILER 名稱由大到小 |
@@ -352,7 +352,8 @@ flowchart LR
     setup["setup"] --> init_design_dp["init_design_dp"]
     init_design_dp --> create_floorplan["create_floorplan"]
     create_floorplan --> create_power["create_power"]
-    create_power --> place_pins["place_pins"]
+    create_power --x place_pins["place_pins"]
+    create_power --> End["place_pins 已在 create_floorplan 執行過，省略後續流程直接寫出 floorplan 資料。"]
     place_pins --> write_data_dp["write_data_dp"]
     write_data_dp --> all_dp["all_dp"]
 ```
@@ -369,13 +370,14 @@ flowchart LR
 | GENERAL | INITIALIZE_FLOORPLAN_UTIL |  | 清除內容不使用 util 模式，將使用 BOUNDARY 形式 |
 | GENERAL | INITIALIZE_FLOORPLAN_BOUNDARY | {0 0} {x y} | 使用 x y 設定 DIE 大小 |
 | GENERAL | INITIALIZE_FLOORPLAN_CORE_OFFSET | 0 0 | 設定為 0 0，使 CORE 可以擺到 DIE 邊緣 |
-| GENERAL | TCL_USER_PLACE_PINS_INIT_POST_SCRIPT | place_pins_init_post.tcl | 修正 port 位置 |
+| GENERAL | TCL_USER_PLACE_PINS_INIT_PRE_SCRIPT | place_pins_init_pre_script.tcl | 修正 port 位置 |
 | GENERAL | TCL_PHYSICAL_CONSTRAINTS_FILE | physical_constraints.tcl | 設定 macro placement、blockages、voltage area |
 | GENERAL | TCL_MV_SETUP_FILE | init_design.mv_setup.tcl | 複製 examples/TCL_MV_SETUP_FILE.tcl 至 rm_user_plugin_scripts 裡並修改內容 |
+| GENERAL | TCL_USER_CREATE_POWER_FLAT_POST_SCRIPT | write_data_dp_flat.tcl | 寫出 floorplan 資訊 |
 | GENERAL | TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE | auto_placement_constraints.tcl | 設定 keepout_margin 和 macro 擺放方向 |
 | GENERAL | CONGESTION_DRIVEN_PLACEMENT | macro | 建議設定 |
 | GENERAL | TIMING_DRIVEN_PLACEMENT | std_cell | 建議設定 |
-| GENERAL | TCL_PNS_FILE | pns_strategies.tcl | 設定 power 和 ground 佈線範圍與佈線條件 |
+| GENERAL | TCL_PNS_FILE | pns_strategies.tcl | 自定 power & ground 佈線方式 |
 | GENERAL | TCL_COMPILE_PG_FILE |  | 此處設定無用，被 sidefile_setup.tcl 的 TCL_COMPILE_PG_FILE 設定覆蓋 |
 | GENERAL | TCL_PIN_CONSTRAINT_FILE | pins_constraints.tcl | 設定 pin 條件與允許使用的 layer |
 
@@ -385,8 +387,8 @@ flowchart LR
 | --- | --- | --- | --- |
 | GENERAL | SIDEFILE_CREATE_FLOORPLAN_FLAT_BOUNDARY_CELLS | boundary_cells.tcl | 設定 bounadry cell 擺放 |
 | GENERAL | SIDEFILE_CREATE_FLOORPLAN_FLAT_TAP_CELLS | tap_cells.tcl | 設定 tap cell 擺放 |
-| GENERAL | TCL_USER_CONNECT_PG_NET_SCRIPT | connect_pg_net.tcl | 設定 pg 連接 |
-| GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 設定 pg 方式 |
+| GENERAL | TCL_USER_CONNECT_PG_NET_SCRIPT | connect_pg_net_script.tcl | 自定 power & ground 連接 |
+| GENERAL | TCL_COMPILE_PG_FILE | compile_pg.tcl | 自定 power & ground 佈線 |
 
 ### rm_user_plugin_scripts 資料夾設定 (FLAT)
 
@@ -395,12 +397,13 @@ flowchart LR
 - [auto_placement_constraints.tcl](#auto_placement_constraintstcl)
 - [boundary_cells.tcl](#boundary_cellstcl)
 - [compile_pg.tcl](#compile_pgtcl)
-- [connect_pg_net.tcl](#connect_pg_nettcl)
+- [connect_pg_net_script.tcl](#connect_pg_net_scripttcl)
 - [init_design.mv_setup.tcl](#init_designmv_setuptcl)
 - [physical_constraints.tcl](#physical_constraintstcl)
-- [place_pins_init_post.tcll](#place_pins_init_posttcl)
+- [place_pins_init_pre_script.tcll](#place_pins_init_pre_scripttcl)
 - [pns_strategies.tcl](#pns_strategiestcl)
 - [tap_cells.tcl](#tap_cellstcl)
+- [write_data_dp_flat.tcl](#write_data_dp_flattcl)
 
 #### auto_placement_constraints.tcl
 
@@ -418,30 +421,32 @@ set_macro_constraints -allowed_orientations {R0 R90 R180 R270 MX MXR90 MY MYR90}
 set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4]
 compile_boundary_cells
 check_boundary_cells
-
-set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4] -at_va_boundary
-compile_targeted_boundary_cells -target_objects [get_voltage_area {PD_OFF}]
-check_targeted_boundary_cells
 ```
 
 #### compile_pg.tcl
 
 ```text
 compile_pg -strategies ring_strat
-compile_pg -strategies {rail_strat_vss rail_strat_vdd rail_strat_off} -via_rule rail_via_rule
-compile_pg -straegies {tap_off} -via_rule tap_via
-compile_pg -strategies {mesh_strat_on mesh_strat_off} -via_rule mesh_via_rule
+compile_pg -strategies {rail_strat_gndk rail_strat_vddk rail_strat_off} -via_rule rail_via_rule
+compile_pg -straegies tap_strat_off
+compile_pg -strategies {mesh_strat_top mesh_strat_on mesh_strat_off} -via_rule mesh_via_rule
+
+#SW_VDD
+create_pg_vias -nets VDDK -from_types stripe -to_types pwrswitch_pin -from_layer ME5 -to_layers ME1 -via_masters {VIA12_1cut_H_3S VIA23_1cut_H_3S VIA34_1cut_H_3S VIA45_1cut_H_3S}
+create_pg_vias -nets VDDK -from_types stripe -to_types stripe -from_layer ME5 -to_layers ME2
+#RAM
+create_pg_vias -nets {VDDK VDDK_SW_OFF GNDK} -from_types stripe -to_types macro_pin -from_layer ME5 -to_layers ME4
 ```
 
-#### connect_pg_net.tcl
+#### connect_pg_net_script.tcl
 
 ```text
-create_port VDDK -direction inout -port_type power
-create_port GNDK -direction inout -port_type ground
-create_net VDDK -power
-create_net GNDK -ground
-connect_pg_net -net VDDK [get_ports VDDK]
-connect_pg_net -net GNDK [get_ports GNDK]
+#create_port VDDK -direction inout -port_type power
+#create_port GNDK -direction inout -port_type ground
+#create_net VDDK -power
+#create_net GNDK -ground
+#connect_pg_net -net VDDK [get_ports VDDK]
+#connect_pg_net -net GNDK [get_ports GNDK]
 connect_pg_net -net VDDK [get_flat_pins */VDD -all]
 connect_pg_net -net GNDK [get_flat_pins */VSS -all]
 connect_pg_net -net VDDK [get_flat_pins */VBP -all]
@@ -451,11 +456,16 @@ connect_pg_net -net GNDK [get_flat_pins */VBN -all]
 #### init_design.mv_setup.tcl
 
 ```text
-create_power_switch_array -power_switch PD_SW -lib_cell */SW_CELL_NAME -voltage_area PD_OFF -x_pitch 48.72 -y_pitch 1.26
+create_power_switch_array -power_switch PD_OFF_SW -lib_cell */SW_CELL_NAME -voltage_area PD_OFF -x_pitch 48.72 -x_offset 20 -siterow_pitch 1 -siterow_offset 1
+
 connect_power_switch -source PSW_ON -port_name SW_PORT -mode daisy -direction vertical -voltage_area PD_OFF
+
 associate_mv_cells -power_switches
-#connect_pg_net -net VDDK_SW_OFF [get_pins */VDDC -physical_context -filter {power_domain == PD_OFF}] #pw_vdd
-#connect_pg_net -net VDDK [get_flat_pins */VDDP -all] #pw_on
+
+#connect_pg_net -net VDDK_SW_OFF [get_pins */VDDC -physical_context -filter {power_domain == PD_OFF}]
+#connect_pg_net -net VDDK [get_pins */VDDP -physical_context -filter {power_domain == PD_OFF}]
+#connect_pg_net -net GNDK [get_pins */VSS -physical_context -filter {power_domain == PD_OFF}]
+
 connect_pg_net -automatic
 ```
 
@@ -473,14 +483,14 @@ create_voltage_area -power_domains PD_OFF -is_fixed -region {{0 0} {x y}} -guard
 create_voltage_area_rule -name default_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthorugh false -allow_logical_feedthrough false
 create_voltage_area_rule -name off_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthorugh true -allow_logical_feedthrough true -voltage_areas PD_OFF
 
-crate_keepout_margin -type hard_macro -outer {left bottom right top} [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_keepout_margin -type hard_macro -outer {left bottom right top} [get_cells * -physical_context -filter {is_memory_cell == true}]
 create_placement_blockage -type hard_macro -boundary {{0 0}{x y}} -name PM
 
-crate_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_macro 2 [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_macro 2 [get_cells * -physical_context -filter {is_memory_cell == true}]
 create_placement_blockage -type hard -boundary {{0 0}{x y}} -name PB
 ```
 
-#### place_pins_init_post.tcl
+#### place_pins_init_pre_script.tcl
 
 ```text
 set unplaced_ports [get_ports -quiet -filter "port_type!=power && port_type!=ground"]
@@ -501,6 +511,7 @@ foreach_in_collection port $unplaced_ports {
     crate_terminal -object $shape_of_terminal -port $port
 }
 remove_shapes [get_shapes -hierarchical -filter undefined(net)]
+set_fixed_objects [get_terminals -quiet -filter "physical_status==unrestricted"]
 ```
 
 #### pns_strategies.tcl
@@ -520,27 +531,27 @@ create_pg_region {pg_core} -polygon {{0 0} {x1 y1} {x2 y2} ... {x? y?}}
 
 create_pg_ring_pattern ring_pat -horizontal_layer {ME1} -horizontal_width {5} -horizontal_spacing {2} -vertical_layer {ME3} -vertical_wodth {5} -vertical_spacing {2}
 
-create_pg_std_cell_conn_pattern rail_pat -layer {ME1 ME2} -rail_width 0.07
+create_pg_std_cell_conn_pattern rail_pat -layer {ME1 ME2}
 
-create_pg_special_pattern tap_pat -insert_physical_cell_alignment_straps {{lib_cells:TAP}{layer:ME2}{width:0.07}{direction:horizontal}{pin_layers:ME2}}
+create_pg_special_pattern tap_pat -insert_physical_cell_alignment_straps {{lib_cells:TAP}{layer:ME2}{direction:horizontal}{pin_layers:ME2}}
 
 ##############################################################################################################
-#       VDD         OFF         VSS         VDD         OFF         VSS         VDD         OFF         VSS
+#       VDDK         OFF         GNDK         VDDK         OFF         GNDK         VDDK         OFF         GNDK
 #width  1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12
 #space          7           7           7           7           7           7           7           7
 #       pwrsw                                                                   pwrsw
 ##############################################################################################################
-#VDD to VSS spacing = 7 + 1.12 + 7 = 15.12
-#VDD to VDD pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 24.36
+#VDDK to GNDK spacing = 7 + 1.12 + 7 = 15.12
+#VDDK to VDDK pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 24.36
 #pwrse pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 48.72
 ##############################################################################################################
-#       VDD         OFF         VSS         VDD         OFF         VSS         VDD         OFF         VSS
+#       VDDK         OFF         GNDK         VDDK         OFF         GNDK         VDDK         OFF         GNDK
 #width  5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88
 #space      2.24        2.24        2.24        2.24        2.24        2.24        2.24        2.24
 #       pwrsw                                                                   pwrsw
 ##############################################################################################################
-#VDD to VSS spacing = 2.24 + 5.88 + 2.24 = 10.36
-#VDD to VDD pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 24.36
+#VDDK to GNDK spacing = 2.24 + 5.88 + 2.24 = 10.36
+#VDDK to VDDK pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 24.36
 #pwrse pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 48.72
 ##############################################################################################################
 
@@ -556,36 +567,27 @@ create_pg_mesh_pattern mesh_pat -layers { \
 }
 
 #remove_pg_strategies all
-set_pg_strategy ring_strat -pg_regions pg_core -pattern {{name:ring_pat}{nets:VDD VSS}}
+set_pg_strategy ring_strat -pg_regions pg_core -pattern {{name:ring_pat}{nets:VDDK GNDK}}
 
-set_pg_strategy rail_strat_vss -pg_regions pg_core -pattern {{name:rail_pat}{nets:VSS}}
-set_pg_strategy rail_strat_vdd -pg_regions pg_core -pattern {{name:rail_pat}{nets:VDD}} -blockage {voltage_areas:PD_OFF}
-set_pg_strategy rail_strat_off -voltage_areas PD_OFF -pattern {{name:rail_pat}{nets:OFF}}
+set_pg_strategy rail_strat_gndk -pg_regions pg_core -pattern {{name:rail_pat}{nets:GNDK}}
+set_pg_strategy rail_strat_vddk -voltage_areas DEFAULT_VA -pattern {{name:rail_pat}{nets:VDDK}} -blockage {voltage_areas:PD_OFF}
+set_pg_strategy rail_strat_off -voltage_areas PD_OFF -pattern {{name:rail_pat}{nets:VDDK_SW_OFF}}
 
-set memory_list [get_cells * -physical_context -filter "is_memory_cell ==true"]
-set_pg_strategy tap_off -voltage_area PD_OFF -pattern {{name:tap_pat}{nets:{VDD}}} -blockage {{{layers:{ME1 ME2}}{macros_with_keepout:$memory_list}}}
+set_pg_strategy tap_strat_off -voltage_area PD_OFF -pattern {{name:tap_pat}{nets:VDDK}} -blockage {voltage_areas:DEFAULT_VA}
 
-#       VDD         X         VSS
-set_pg_strategy mesh_strat_top -pg_regions pg_core -pattern {{name:mesh_pat}{nets:{VDD - VSS}}}
-#       X         VDD         X
-set_pg_strategy mesh_strat_on -pg_regions pg_core -pattern {{name:mesh_pat}{nets:{- VDD -}}} -blockage {voltage_areas:PD_OFF}
-#       X         OFF         X
-set_pg_strategy mesh_strat_off -voltage_areas {PD_OFF} -pattern {{name:mesh_pat}{nets:{- OFF -}}{offset:{8.12 8.12}}{offset_start:boundary}} -blockage {voltage_areas:DEFAULT_VA}
+#   VDDK        X               GNDK
+set_pg_strategy mesh_strat_top -pg_regions pg_core -pattern {{name:mesh_pat}{nets:{VDDK - GNDK}}}
+#   X           VDDK            X
+set_pg_strategy mesh_strat_on -pg_regions pg_core -pattern {{name:mesh_pat}{nets:{- VDDK -}}} -blockage {voltage_areas:PD_OFF}
+#   X           VDDK_SW_OFF     X
+set_pg_strategy mesh_strat_off -voltage_areas PD_OFF -pattern {{name:mesh_pat}{nets:{- VDDK_SW_OFF -}}{offset:{8.12 8.12}}{offset_start:boundary}} -blockage {voltage_areas:DEFAULT_VA}
 
 #remove_pg_strategy_via_rules -all
-
 set_pg_strategy_via_rule rail_via_rule -via_rule {{intersection:all}{via_master:NIL}}
-
-set_pg_strategy_via_rule tap_via -via_rule { \
-    { \
-        {{existing:strap}{layers:{ME5}}} \
-        {via_master:{VIA12_cut VIA23_cut VIA34_cut VIA45_cut}} \
-    }
-}
 
 set_pg_strategy_via_rule mesh_via_rule -via_rule { \
     { \
-        {{strategies:{mesh_strat_on mesh_strat_off}}{layers:ME5}} \
+        {{strategies:{mesh_strat_top mesh_strat_on mesh_strat_off}}{layers:ME5}} \
         {{existing:std_conn}{layers:ME2}} \
         {via_master:default} \
     } \
@@ -597,10 +599,34 @@ set_pg_strategy_via_rule mesh_via_rule -via_rule { \
 
 ```text
 #remove_cells [get_cells * -physical_context -filter {ref_name =~ TAP}]
-create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area PD_OFF -offset 24.36 -skip_fixed_cells
+create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area PD_OFF -skip_fixed_cells
 
-connect_pg_net -net OFF [get_pins */VDD -physical_context -filter {power_domain == PD_OFF}]
-connect_pg_net -net VDD [get_pins */VDDR -physical_context -filter {power_domain == PD_OFF}]
+connect_pg_net -net VDDK [get_pins */VDD -physical_context -filter {power_domain == PD_TOP}]
+connect_pg_net -net GNDK [get_pins */VSS -physical_context -filter {power_domain == PD_TOP}]
+
+connect_pg_net -net VDDK_SW_OFF [get_pins */VDD -physical_context -filter {power_domain == PD_OFF}]
+connect_pg_net -net VDDK [get_pins */VDDR -physical_context -filter {power_domain == PD_OFF}]
+connect_pg_net -net GNDK [get_pins */VSS -physical_context -filter {power_domain == PD_OFF}]
+```
+
+#### write_data_dp_flat.tcl
+
+```text
+set WRITE_DATA_FROM_BLOCK_NAME ${DESIGN_NAME}
+########################################################################
+## write_floorplan and write_def
+########################################################################
+set write_floorplan_cmd_root "write_floorplan \
+  -format icc2 \
+  -def_version 5.8 \
+  -force \
+  -read_def_options {-add_def_only_objects {all} -skip_pg_net_connections} \
+  -exclude {scan_chains fills pg_metal_fills routing_rules} \
+  -net_types {power ground} \
+  -include_physical_status {fixed locked}"
+set write_floorplan_cmd "$write_floorplan_cmd_root -output ${OUTPUTS_DIR}/${WRITE_DATA_FROM_BLOCK_NAME}_write_floorplan" 
+puts "RM-info: running $write_floorplan_cmd"
+eval ${write_floorplan_cmd}
 ```
 
 ## Design Planning HIER 流程
