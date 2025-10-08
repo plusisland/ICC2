@@ -180,6 +180,8 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | ALL | PHYSICAL INPUTS | DEF_SCAN_FILE | *.def | design 給檔案 |
 | ALL | USER PLUGIN SCRIPTS| TCL_USER_WRITE_DATA_POST_SCRIPT | [write_data_post_script.tcl](#write_data_post_scripttcl) | 於 rm_user_plugin_scripts 新建檔案，並客製化寫出項目 |
 
+[返回 rm_setup 資料夾設定](#rm_setup-資料夾設定)
+
 ### header_icc2_*.tcl
 
 修改 **set search_path** 加入自訂額外搜尋路徑，例如：./design
@@ -215,6 +217,8 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 | ALL | TCL_COMPILE_PG_FILE |  | 此處設定無用，被 sidefile_setup.tcl 的 TCL_COMPILE_PG_FILE 設定覆蓋 |
 | ALL | TCL_PIN_CONSTRAINT_FILE | [pin_constraints.tcl](#pin_constraintstcl) | 設定 pin 條件與允許使用的 layer |
 
+[返回 rm_setup 資料夾設定](#rm_setup-資料夾設定)
+
 ### sidefile_setup.tcl
 
 | 流程 | 變數 | 數值 | 說明 |
@@ -231,6 +235,8 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 | ALL | CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST | */FILE64U |填入有電容 FILER 名稱由大到小 |
 | ALL | CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST | */FIL4U |填入無電容 FILER 名稱由大到小 |
 | ALL | WRITE_GDS_LAYER_MAP_FILE | streamout.map | 轉 GDS 對 layer 用 |
+
+[返回 rm_setup 資料夾設定](#rm_setup-資料夾設定)
 
 ## rm_icc2_pnr_scripts 資料夾設定
 
@@ -400,6 +406,8 @@ foreach_in_collection scenario [all_scenarios] {
 }
 ```
 
+[返回 rm_icc2_pnr_scripts 資料夾設定](#rm_icc2_pnr_scripts-資料夾設定)
+
 ### init_design.parasitic_setup.tcl
 
 ```text
@@ -427,6 +435,8 @@ foreach p [array name tluplus_file] {
     read_parasitic_tech -tlup $tluplus_file($p) -layermap $layer_map_file($p) -name $p
 }
 ```
+
+[返回 rm_icc2_pnr_scripts 資料夾設定](#rm_icc2_pnr_scripts-資料夾設定)
 
 ## rm_user_plugin_scripts 資料夾設定
 
@@ -475,6 +485,8 @@ set_app_options -name plan.place.auto_generate_blockages -value false
 set_macro_constraints -allowed_orientations {R0 R90 R180 R270 MX MXR90 MY MYR90} [get_cells * -physical_context -filter {is_memory_cell == true}]
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### block_insert_cells.tcl
 
 ```text
@@ -513,6 +525,8 @@ close_blocks $block_refname
 close_lib $block_libfilename
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### boundary_cells.tcl
 
 ```text
@@ -521,6 +535,8 @@ set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_bou
 compile_boundary_cells
 check_boundary_cells
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### clock_opt_cts_post_script.tcl
 
@@ -538,6 +554,8 @@ set_scenario_status -active true [$active_scenarios]
 set_scenario_status -active false [$inactive_scenarios]
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### clock_opt_cts_pre_script.tcl
 
 ```text
@@ -550,6 +568,8 @@ foreach_in_collection scenario [get_scenarios] {
 }
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### compile_pg.tcl
 
 ```text
@@ -561,6 +581,8 @@ compile_pg -strategies {mesh_strat_top mesh_strat_on mesh_strat_off} -via_rule m
 #SW_VDD
 create_pg_vias -nets VDDK -from_types stripe -to_types pwrswitch_pin -from_layer ME5 -to_layers ME1 -via_masters {VIA12_1cut_H_3S VIA23_1cut_H_3S VIA34_1cut_H_3S VIA45_1cut_H_3S}
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### connect_pg_net_script.tcl
 
@@ -576,6 +598,8 @@ connect_pg_net -net GNDK [get_flat_pins */VSS -all]
 connect_pg_net -net VDDK [get_flat_pins */VBP -all]
 connect_pg_net -net GNDK [get_flat_pins */VBN -all]
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### fix_ports_loctation.tcl
 
@@ -601,6 +625,8 @@ remove_shapes [get_shapes -hierarchical -filter undefined(net)]
 set_fixed_objects [get_terminals -quiet -filter "physical_status==unrestricted"]
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### init_design.mv_setup.tcl
 
 ```text
@@ -616,6 +642,8 @@ associate_mv_cells -power_switches
 
 connect_pg_net -automatic
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### init_design_post_script.tcl
 
@@ -643,6 +671,8 @@ foreach_in_collection scenario [all_scenario] {
 set_app_options -name time.remove_clock_reconvergence_pessimism -value true
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### multi_vth_constraint_script.tcl
 
 | 變數 | 數值 | 說明 |
@@ -653,11 +683,15 @@ set_app_options -name time.remove_clock_reconvergence_pessimism -value true
 | ENABLE_AUTO_MULTI_VT_CONSTRAINT | true | 總開關 |
 | LVT_percentage | 15 | LVT 比率 |
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### pad_constraints.tcl
 
 ```text
 read_def IO.def
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### physical_constraints.tcl
 
@@ -680,11 +714,15 @@ create_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_mac
 create_placement_blockage -type hard -boundary {{0 0}{x y}} -name PB
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### pin_constraints.tcl
 
 ```text
 set_block_pin_constraints -allowed_layers {ME2 ME3 ME4 ME5} -allow_feedthroughs true
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### place_opt_post_script.tcl
 
@@ -695,6 +733,8 @@ add_tie_cells -tie_high_lib_cells */TIE1 -tie_low_lib_cells */TIE0
 set_attribute -objects [get_lib_cells */TIE0] -name dont_use -value 1
 set_attribute -objects [get_lib_cells */TIE1] -name dont_use -value 1
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### place_opt_pre_script.tcl
 
@@ -708,6 +748,8 @@ set_app_options -name place.legalize.support_off_track_via_region -value true
 set_app_options -name place_opt.initial_drc.global_route_based -value true
 set_app_options -name place_opt.place.congestion_effort -value high
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### pns_strategies.tcl
 
@@ -789,6 +831,8 @@ set_pg_strategy_via_rule mesh_via_rule -via_rule { \
 }
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### post_pns.tcl
 
 ```text
@@ -797,6 +841,8 @@ run_block_script -script ./rm_user_plugin_scripts/block_insert_cells.tcl -cells 
 
 change_view -view design -cells {hier_names/block_names}
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### route_opt_post_script.tcl
 
@@ -833,6 +879,8 @@ route_detail -incremental true initial_drc_from_input true
 #set_route_opt_target_endpoints -auto hold
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### shaping_constraints.tcl
 
 ```text
@@ -852,6 +900,8 @@ foreach_in_collection_block [get_blocks -hierarchical] {
 #set_fixed_objects [get_cells hier_names/block_names]
 ```
 
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### tap_cells.tcl
 
 ```text
@@ -867,6 +917,8 @@ connect_pg_net -net VDDK_SW_OFF [get_pins */VDD -physical_context -filter {power
 connect_pg_net -net VDDK [get_pins */VDDR -physical_context -filter {power_domain == PD_OFF}]
 connect_pg_net -net GNDK [get_pins */VSS -physical_context -filter {power_domain == PD_OFF}]
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
 ### write_data_post_script.tcl
 
@@ -911,3 +963,5 @@ parallel_excute -commands_only {
     {eval $write_gds_cmd}
 }
 ```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
