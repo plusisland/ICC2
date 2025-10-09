@@ -148,14 +148,14 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | --- | --- | --- | --- | --- |
 | PNR_TOP | DESIGN PLANNING SETUP | SUB_BLOCK_LIBRARIES | pnr/BLOCK_NAME/BLOCK_NAME | TOP 需要設定完成的 block 資料夾所在位置 |
 | PNR_TOP | DESIGN PLANNING SETUP | USE_ABSTRACTS_FOR_BLOCKS | BLOCK_NAME | TOP 需要設定完成的 block module_name |
-| ALL | DESIGN PLANNING SETUP | BLOCK_ABSTRACT_FOR_* | $ICV_IN_DESIGN_BLOCK_NAME abstract | 修改為各步驟階段變數名稱 |
-| ALL | LIBRARY SETUP | REFERENCE_LIBRARY | *.ndm | 填入NDM 所在位置 STD_NDM 要在最前面 |
+| PNR_TOP | DESIGN PLANNING SETUP | BLOCK_ABSTRACT_FOR_* | $ICV_IN_DESIGN_BLOCK_NAME abstract | 修改各步驟階段變數名稱 |
+| ALL | LIBRARY SETUP | REFERENCE_LIBRARY | *.ndm | 填入 NDM 所在位置 STD_NDM 要在最前面 |
 | ALL | LIBRARY SETUP | TCL_MULTI_VT_CONSTRAINT_FILE | [multi_vth_constraint_script.tcl](#multi_vth_constraint_scripttcl) | 編輯 rm_user_plugin_scripts 裡的檔案，修改 HVT SVT LVT 名稱與 LVT % 數 |
 | ALL | LIBRARY SETUP | TIE_LIB_CELL_PATTERN_LIST | */*TIE* |TIE CELL 名稱 |
 | ALL | LIBRARY SETUP | HOLD_FIX_LIB_CELL_PATTERN_LIST | */BUF* */INV* */DEL* | 填入修 Hold time 使用的 cell |
 | ALL | LIBRARY SETUP | CTS_LIB_CELL_PATTERN_LIST | */NBUF* */AOBUF* */AOINV* */SDFF* | 修 CTS 使用，包含repeaters, always-on repeaters, and gates, always-on buffer |
 | ALL | LIBRARY SETUP | CTS_ONLY_LIB_CELL_PATTERN_LIST | */CKBUF* */CKINV* | 填入長 CTS 使用的 cell |
-| ALL | TECHNOLOGY | TECH_FILE | tech.tf | technology file |
+| ALL | TECHNOLOGY | TECH_FILE | tech | technology file |
 | ALL | TECHNOLOGY | ENABLE_REDUNDANT_VIA_INSERTION | true | clock_opt_opto, route_auto, route_opt 塞 double via |
 | ALL | TECHNOLOGY | ENABLE_POST_ROUTE_OPT_REDUNDANT_VIA_INSERTION | true | hyper_route_opt 塞 double via |
 | ALL | TECHNOLOGY | TCL_ANTENNA_RULE_FILE | antenna_rule.tcl | 參考 examples/TCL_ANTENNA_RULE_FILE.txt 核對製程廠給的 antenna 資料內容是否正確 |
@@ -178,7 +178,7 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | PNR_TOP | PHYSICAL INPUTS | TCL_FLOORPLAN_FILE | dp/$DESIGN_NAME/outputs_icc2/write_data_write_floorplan/floorplan.tcl | 讀取 DP 結果 |
 | PNR_BOT | PHYSICAL INPUTS | TCL_FLOORPLAN_FILE | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME_write_floorplan/floorplan.tcl | 讀取 DP 結果 |
 | ALL | PHYSICAL INPUTS | DEF_SCAN_FILE | *.def | design 給檔案 |
-| ALL | USER PLUGIN SCRIPTS| TCL_USER_WRITE_DATA_POST_SCRIPT | [write_data_post_script.tcl](#write_data_post_scripttcl) | 於 rm_user_plugin_scripts 新建檔案，並客製化寫出項目 |
+| PNR | USER PLUGIN SCRIPTS| TCL_USER_WRITE_DATA_POST_SCRIPT | [write_data_post_script.tcl](#write_data_post_scripttcl) | 於 rm_user_plugin_scripts 新建檔案，並客製化寫出項目 |
 
 [返回 rm_setup 資料夾設定](#rm_setup-資料夾設定)
 
@@ -532,8 +532,8 @@ close_lib $block_libfilename
 ```text
 #remove_cells [get_cells * -physical_context -filter {ref_name =~ FILLER4}]
 set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4]
-compile_boundary_cells
-check_boundary_cells
+compile_targeted_boundary_cells
+check_targeted_boundary_cells
 ```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
