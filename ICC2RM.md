@@ -395,7 +395,7 @@ foreach_in_collection scenario [all_scenarios] {
     }
 
     set_clock_uncertainty -setup 0.3 [all_clocks]
-    set_clock_uncertainty -seholdtup 0.3 [all_clocks]
+    set_clock_uncertainty -hold 0.3 [all_clocks]
 
     if {$analysis == "setup"} {
         set_scenario_status $scenario -none -setup true -hold false -leakage_power true -dynamic_power true -max_transition true -max_capacitance true -min_capacitance false -active true
