@@ -159,7 +159,7 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | ALL | TECHNOLOGY | ENABLE_REDUNDANT_VIA_INSERTION | true | clock_opt_opto, route_auto, route_opt 塞 double via |
 | ALL | TECHNOLOGY | ENABLE_POST_ROUTE_OPT_REDUNDANT_VIA_INSERTION | true | hyper_route_opt 塞 double via |
 | ALL | TECHNOLOGY | TCL_ANTENNA_RULE_FILE | antenna_rule.tcl | 參考 examples/TCL_ANTENNA_RULE_FILE.txt 核對製程廠給的 antenna 資料內容是否正確 |
-| DP | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | [init_design.mcmm_setup.tcl](#init_designmemm_setuptcl) | 複製 examples/TCL_MCMM_SETUP_FILE.*.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
+| DP | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | [init_design.mcmm_setup.tcl](#init_designmcmm_setuptcl) | 複製 examples/TCL_MCMM_SETUP_FILE.*.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
 | PNR_TOP | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/write_data_wscript/top.tcl.gz | 讀取 DP 結果 |
 | PNR_BOT | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME_wscript/top.tcl.gz | 讀取 DP 結果 |
 | ALL | MCMM SCENARIO/MODE/CORNER SETUP |TCL_PARASITIC_SETUP_FILE | [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) | 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
