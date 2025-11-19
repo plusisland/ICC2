@@ -13,7 +13,7 @@ flowchart TD
     APR --> tech[tech]
 ```
 
- 前往 [https://solvnet.synopsys.com/rmgen](https://solvnet.synopsys.com/rmgen) 需有企業驗證帳號方能下載 Reference Methodology；或者在 icc2 目錄下啟動圖形介面，點選 Help → Generate RM Scripts → I agree to the above Terms and Conditions → I agree → OK 。當前路徑底下輸入 **tar zxvf ICC2-RM_*.tar.gz** 解壓縮。解壓縮完畢後進入資料夾內先建立 design.cfg 檔案，根據需求去調整檔案內容。假設電路邏輯架構如下圖
+ 前往 [https://solvnet.synopsys.com/rmgen](https://solvnet.synopsys.com/rmgen) 需有驗證帳號才能下載 Reference Methodology；或者在 icc2 目錄下啟動圖形介面，點選 Help → Generate RM Scripts → I agree to the above Terms and Conditions → I agree → OK 。當前路徑底下輸入 **tar zxvf ICC2-RM_*.tar.gz** 解壓縮。解壓縮完畢後進入資料夾內先建立 design.cfg 檔案，根據需求去調整檔案內容。假設電路邏輯架構如下圖
 
 ```mermaid
 treemap-beta
@@ -26,7 +26,7 @@ treemap-beta
         "D": 30
 ```
 
-填入多層名稱就是走 HIER 架構(限定使用 space 或 tab 分層)
+填入多層名稱就是走 HIER 架構(限定使用 space 或 tab4)
 
 FLAT 架構：
 
@@ -243,7 +243,7 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 需要建立或修改下列檔案
 
 - [cts_ndr.tcl](#cts_ndrtcl) 複製 examples/cts_ndr.tcl 修改
-- [init_design.memm_setup.tcl](#init_designmemm_setuptcl) 複製 examples/TCL_MCMM_SETUP_FILE.auto_expanded.tcl 修改
+- [init_design.mcmm_setup.tcl](#init_designmcmm_setuptcl) 複製 examples/TCL_MCMM_SETUP_FILE.auto_expanded.tcl 修改
 - [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 修改
 
 ### cts_ndr.tcl
@@ -254,7 +254,7 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 | CTS_NDR_MIN_ROUTING_LAYER | ME3 | 修改繞線最小層數 |
 | CTS_NDR_MAX_ROUTING_LAYER | ME6 | 修改繞線最大層數 |
 
-### init_design.memm_setup.tcl
+### init_design.mcmm_setup.tcl
 
 ```mermaid
 classDiagram
@@ -533,7 +533,7 @@ close_lib $block_libfilename
 #remove_cells [get_cells * -physical_context -filter {ref_name =~ FILLER4}]
 set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4]
 compile_targeted_boundary_cells
-check_targeted_boundary_cells
+#check_targeted_boundary_cells
 ```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
@@ -541,17 +541,18 @@ check_targeted_boundary_cells
 ### clock_opt_cts_post_script.tcl
 
 ```text
-set active_scenarios [get_scenarios -filter active]
-set inactive_scenarios [get_scenarios -filter active==false]
+# 不改變已經建好的時鐘樹結構，更新所有時鐘訊號的實際傳播延遲和時序資訊
+if {[sizeof_collection [get_scenarios -filter active==false -quiet]] > 0} {
+    set active_scenarios [get_scenarios -filter active]
+    set inactive_scenarios [get_scenarios -filter active==false]
 
-set_scenario_status -active true [get_scenarios] {
-    current_scenarios $scenario
-    remove_idealnetwork -all
-    set_propagated_clock [all_clock]
+    set_scenario_status -active false [get_scenarios $active_scenarios]
+    set_scenario_status -active true [get_scenarios $inactive_scenarios]
+
+    synthesize_clock_trees -propagate_only ;# only works on active scenarios
+    set_scenario_status -active true [get_scenarios $active_scenarios]
+    set_scenario_status -active false [get_scenarios $inactive_scenarios]
 }
-
-set_scenario_status -active true [$active_scenarios]
-set_scenario_status -active false [$inactive_scenarios]
 ```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
@@ -667,7 +668,7 @@ foreach_in_collection scenario [all_scenario] {
     #group_path -name CLOCK_GATE -from [all_registers] -to [get_flat_cells -filter "is_sequential == false && is_combinational == true && is_hard_macro ==false && is_memory_cell == false"]
 }
 
-#將lauch與capture共同區段視為同時到達，只計算分叉後實際差異
+# 將 lauch 與 capture 共同區段視為同時到達，只計算分叉後實際差異
 set_app_options -name time.remove_clock_reconvergence_pessimism -value true
 ```
 
@@ -742,7 +743,7 @@ set_attribute -objects [get_lib_cells */TIE1] -name dont_use -value 1
 set_app_options -name place.coarse.icg_auto_bound -value true
 set_app_options -name place.legalize.enable_advanced_legalizer -value true
 
-#允許via off track擺放，非必要不開。std很爛時才開
+# 允許 via off track 擺放，非必要不開。std 很爛時才開
 set_app_options -name place.legalize.support_off_track_via_region -value true
 
 set_app_options -name place_opt.initial_drc.global_route_based -value true
@@ -774,22 +775,22 @@ create_pg_special_pattern tap_pat -insert_physical_cell_alignment_straps {{lib_c
 
 ##############################################################################################################
 #       VDDK         OFF         GNDK         VDDK         OFF         GNDK         VDDK         OFF         GNDK
-#width  1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12
-#space          7           7           7           7           7           7           7           7
+# width  1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12        1.12
+# space          7           7           7           7           7           7           7           7
 #       pwrsw                                                                   pwrsw
 ##############################################################################################################
-#VDDK to GNDK spacing = 7 + 1.12 + 7 = 15.12
-#VDDK to VDDK pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 24.36
-#pwrse pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 48.72
+# VDDK to GNDK spacing = 7 + 1.12 + 7 = 15.12
+# VDDK to VDDK pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 24.36
+# pwrse pitch = 0.56 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 1.12 + 7 + 0.56 = 48.72
 ##############################################################################################################
 #       VDDK         OFF         GNDK         VDDK         OFF         GNDK         VDDK         OFF         GNDK
-#width  5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88
-#space      2.24        2.24        2.24        2.24        2.24        2.24        2.24        2.24
+# width  5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88        5.88
+# space      2.24        2.24        2.24        2.24        2.24        2.24        2.24        2.24
 #       pwrsw                                                                   pwrsw
 ##############################################################################################################
-#VDDK to GNDK spacing = 2.24 + 5.88 + 2.24 = 10.36
-#VDDK to VDDK pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 24.36
-#pwrse pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 48.72
+# VDDK to GNDK spacing = 2.24 + 5.88 + 2.24 = 10.36
+# VDDK to VDDK pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 24.36
+# pwrse pitch = 2.94 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 5.88 + 2.24 + 2.94 = 48.72
 ##############################################################################################################
 
 create_pg_mesh_pattern mesh_pat -layers { \
