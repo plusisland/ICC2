@@ -351,21 +351,21 @@ foreach_in_collection scenario [get_scenarios -mode mbist] {
 foreach_in_collection scenario [all_scenarios] {
     current_scenario $scenario
 
-    set process [lindex [spilt [get_object_name [current_corner]] _] 0]
-    set voltage [lindex [spilt [get_object_name [current_corner]] _] 1]
-    set temperature [lindex [spilt [get_object_name [current_corner]] _] 2]
-    set rc_corner [lindex [spilt [get_object_name [current_corner]] _] 3]
-    set analysis [lindex [spilt [get_object_name [current_corner]] _] end]
+    set process [lindex [split [get_object_name [current_corner]] _] 0]
+    set voltage [lindex [split [get_object_name [current_corner]] _] 1]
+    set temperature [lindex [split [get_object_name [current_corner]] _] 2]
+    set rc_corner [lindex [split [get_object_name [current_corner]] _] 3]
+    set analysis [lindex [split [get_object_name [current_corner]] _] end]
     
     set_process_number -early $process -late $process
 
-    set_voltage $voltage -min $voltage
-    set_voltage $voltage -min $voltage -object_list VDD
-    set_voltage 0 -min 0 -object_list VSSD
+    set_voltage $voltage
+    set_voltage $voltage -min $voltage -object_list [get_supply_nets {VDD VDD_SW_OFF}]
+    set_voltage 0 -min 0 -object_list [get_supply_nets VSSD]
 
     set_temperature $temperature -min $temperature
 
-    set_parasitic_parameters -earlt_spec $rc_corner -late_spec $rc_corner -early_temperature $temperature -late_temperature $temperature
+    set_parasitic_parameters -early_spec $rc_corner -late_spec $rc_corner -early_temperature $temperature -late_temperature $temperature
     
     if {$voltage == "1.08" && $analysis == "setup"} {
         set_timing_derate -late -clock 1 -cell_delay
