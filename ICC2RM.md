@@ -308,18 +308,41 @@ foreach mode $mode_list {
   create_mode $mode
 }
 
-set corner_list ""
-foreach process $process_list {
-    foreach voltage $voltage_list {
-        foreach temperature $temperature_list {
-            foreach rc_corner $rc_corner_list {
-                foreach analysis $analysis_list {
-                    lappend corner_list "${process}_${voltage}_${temperature}_${rc_corner}_${analysis}"
-                    create_corner ${process}_${voltage}_${temperature}_${rc_corner}_${analysis}
-                }
-            }
-        }
-    }
+#set corner_list ""
+#foreach process $process_list {
+#    foreach voltage $voltage_list {
+#        foreach temperature $temperature_list {
+#           foreach rc_corner $rc_corner_list {
+#                foreach analysis $analysis_list {
+#                    lappend corner_list "${process}_${voltage}_${temperature}_${rc_corner}_${analysis}"
+#                    create_corner ${process}_${voltage}_${temperature}_${rc_corner}_${analysis}
+#                }
+#            }
+#        }
+#    }
+#}
+
+set corner_list "\
+1_1.08_125_cworst_setup \
+1_1.08_125_rcworst_setup \
+1_1.08_-40_cworst_setup \
+1_1.08_-40_rcworst_setup \
+1_1.08_125_cworst_hold \
+1_1.08_125_rcworst_hold \
+1_1.08_-40_cworst_hold \
+1_1.08_-40_rcworst_hold \
+1_1.32_125_cworst_hold \
+1_1.32_125_rcworst_hold \
+1_1.32_125_cbest_hold \
+1_1.32_125_rcbest_hold \
+1_1.32_-40_cworst_hold \
+1_1.32_-40_rcworst_hold \
+1_1.32_-40_cbest_hold \
+1_1.32_-40_rcbest_hold \
+"
+
+foreach corner $corner_list {
+  create_corner $corner
 }
 
 foreach mode $mode_list {
@@ -370,28 +393,28 @@ foreach_in_collection scenario [all_scenarios] {
     if {$voltage == "1.08" && $analysis == "setup"} {
         set_timing_derate -late -clock 1 -cell_delay
         set_timing_derate -late -data 1 -cell_delay
-        set_timing_derate -early 0 clock 0.929 -cell_delay
+        set_timing_derate -early 0.929 -cell_delay
         set_timing_derate -late -clock 1 -net_delay
         set_timing_derate -late -data 1 -net_delay
-        set_timing_derate -early 0 clock 0.929 -net_delay
+        set_timing_derate -early 0.929 -net_delay
     }
 
     if {$voltage == "1.08" && $analysis == "hold"} {
         set_timing_derate -early -clock 0.861 -cell_delay
         set_timing_derate -early -data 0.861 -cell_delay
-        set_timing_derate -late 0 clock 1 -cell_delay
+        set_timing_derate -late 1 -cell_delay
         set_timing_derate -early -clock 0.861 -net_delay
         set_timing_derate -early -data 0.861 -net_delay
-        set_timing_derate -late 0 clock 1 -net_delay
+        set_timing_derate -late 1 -net_delay
     }
     
     if {$voltage == "1.32" && $analysis == "hold"} {
         set_timing_derate -early -clock 1 -cell_delay
         set_timing_derate -early -data 1 -cell_delay
-        set_timing_derate -late 0 clock 1.151 -cell_delay
+        set_timing_derate -late 1.151 -cell_delay
         set_timing_derate -early -clock 1 -net_delay
         set_timing_derate -early -data 1 -net_delay
-        set_timing_derate -late 0 clock 1.151 -net_delay
+        set_timing_derate -late 1.151 -net_delay
     }
 
     set_clock_uncertainty -setup 0.3 [all_clocks]
@@ -608,12 +631,12 @@ connect_pg_net -net GNDK [get_flat_pins */VBN -all]
 set unplaced_ports [get_ports -quiet -filter "port_type!=power && port_type!=ground"]
 foreach_in_collection port $unplaced_ports {
     set port_net [get_nets -of_objects $port]
-    set leaf_pin [get_pins -leaf of_objects $port_net]
+    set leaf_pin [get_pins -leaf -of_objects $port_net]
     set terminals [get_shapes -of_objects $leaf_pin]
     foreach_in_collection terminal $terminals {
         set pin_shape [get_attribute $terminal boundary]
         set pin_layer [get_object_name [get_attribute $terminal layer]]
-        set shape_type [length $pin_shape]
+        set shape_type [llength $pin_shape]
         if {$shape_type == 2} {
             set shape_of_terminal [create_shape -shape_type rect -boundary $pin_shape -layer $pin_layer]
         } else {
@@ -755,7 +778,7 @@ set_app_options -name place_opt.place.congestion_effort -value high
 ### pns_strategies.tcl
 
 ```text
-crate_keepout_margin -type routing_blockage -outer {2 2 2 2} -layers {ME1 ME2 ME3 ME4} [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_keepout_margin -type routing_blockage -outer {2 2 2 2} -layers {ME1 ME2 ME3 ME4} [get_cells * -physical_context -filter {is_memory_cell == true}]
 
 #remove_routes -ring
 #remove_routes -stripe
@@ -767,7 +790,7 @@ create_pg_region {pg_core} -polygon {{0 0} {x1 y1} {x2 y2} ... {x? y?}}
 
 #remove_pg_patterns -all
 
-create_pg_ring_pattern ring_pat -horizontal_layer {ME1} -horizontal_width {5} -horizontal_spacing {2} -vertical_layer {ME3} -vertical_wodth {5} -vertical_spacing {2}
+create_pg_ring_pattern ring_pat -horizontal_layer {ME1} -horizontal_width {5} -horizontal_spacing {2} -vertical_layer {ME3} -vertical_width {5} -vertical_spacing {2}
 
 create_pg_std_cell_conn_pattern rail_pat -layer {ME1 ME2}
 
@@ -799,8 +822,9 @@ create_pg_mesh_pattern mesh_pat -layers { \
     {{vertical_layer:ME7}{width:5.88}{spacing:interleaving}{pitch:24.36}{trim:false}} \
     {{horizontal_layer:AP}{width:5.88}{spacing:interleaving}{pitch:24.36}{trim:false}} \
 } -via_rule { \
-    {{layer:ME5}{layers:ME6}{via_master:default}} \
-    {{layer:ME7}{layers:AP}{via_master:default}} \
+    {{layers:ME5}{layers:ME6}{via_master:default}} \
+    {{layers:ME6}{layers:ME7}{via_master:default}} \
+    {{layers:ME7}{layers:AP}{via_master:default}} \
     {{intersection: undefined} {via_master: NIL}} \
 }
 
@@ -808,7 +832,7 @@ create_pg_mesh_pattern mesh_pat -layers { \
 set_pg_strategy ring_strat -pg_regions pg_core -pattern {{name:ring_pat}{nets:VDDK GNDK}}
 
 set_pg_strategy rail_strat_gndk -pg_regions pg_core -pattern {{name:rail_pat}{nets:GNDK}}
-set_pg_strategy rail_strat_vddk -voltage_areas DEFAULT_VA -pattern {{name:rail_pat}{nets:VDDK}} -blockage {voltage_areas:PD_OFF}
+set_pg_strategy rail_strat_vddk -pg_regions pg_core -pattern {{name:rail_pat}{nets:VDDK}} -blockage {voltage_areas:PD_OFF}
 set_pg_strategy rail_strat_off -voltage_areas PD_OFF -pattern {{name:rail_pat}{nets:VDDK_SW_OFF}}
 
 set_pg_strategy tap_strat_off -voltage_area PD_OFF -pattern {{name:tap_pat}{nets:VDDK}} -blockage {voltage_areas:DEFAULT_VA}
@@ -818,6 +842,7 @@ set_pg_strategy mesh_strat_top -pg_regions pg_core -pattern {{name:mesh_pat}{net
 #   X           VDDK            X
 set_pg_strategy mesh_strat_on -pg_regions pg_core -pattern {{name:mesh_pat}{nets:{- VDDK -}}} -blockage {voltage_areas:PD_OFF}
 #   X           VDDK_SW_OFF     X
+# offset 填入內容為第一條 VDDK_SW_OFF 起始位置到 voltage_areas 邊緣的距離扣掉 8.12 (第一條VDDK要略過跳開 1.12 + 7 = 8.12) 
 set_pg_strategy mesh_strat_off -voltage_areas PD_OFF -pattern {{name:mesh_pat}{nets:{- VDDK_SW_OFF -}}{offset:{8.12 8.12}}{offset_start:boundary}} -blockage {voltage_areas:DEFAULT_VA}
 
 #remove_pg_strategy_via_rules -all
