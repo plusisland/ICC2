@@ -470,10 +470,10 @@ DP FLAT 流程需要建立下列檔案
 - [boundary_cells.tcl](#boundary_cellstcl)
 - [compile_pg.tcl](#compile_pgtcl)
 - [connect_pg_net_script.tcl](#connect_pg_net_scripttcl)
+- [fix_ports_location.tcl](#fix_ports_loctationtcl)
 - [init_design.mv_setup.tcl](#init_designmv_setuptcl)
 - [physical_constraints.tcl](#physical_constraintstcl)
 - [pin_constraints.tcl](#pin_constraintstcl)
-- [fix_ports_location.tcl](#fix_ports_loctationtcl)
 - [pns_strategies.tcl](#pns_strategiestcl)
 - [tap_cells.tcl](#tap_cellstcl)
 
@@ -481,15 +481,19 @@ DP HIER 流程需要建立下列檔案
 
 - [auto_placement_constraints.tcl](#auto_placement_constraintstcl)
 - [block_insert_cells.tcl](#block_insert_cellstcl)
+- [boundary_cells.tcl](#boundary_cellstcl)
 - [compile_pg.tcl](#compile_pgtcl)
 - [connect_pg_net_script.tcl](#connect_pg_net_scripttcl)
 - [expand_outline_post_script.tcl](#expand_outline_post_scripttcl)
 - [fix_ports_location.tcl](#fix_ports_loctationtcl)
-- [pad_constraints.tcl](#pad_constraintstcl)
+- [init_design.mv_setup.tcl](#init_designmv_setuptcl)
+- [init_dp_pre_script.tcl](#init_dp_pre_scripttcl)
+- [physical_constraints.tcl](#physical_constraintstcl)
 - [pin_constraints.tcl](#pin_constraintstcl)
 - [pns_strategies.tcl](#pns_strategiestcl)
 - [post_pns.tcl](#post_pnstcl)
 - [shaping_constraints.tcl](#shaping_constraintstcl)
+- [tap_cells.tcl](#tap_cellstcl)
 
 PNR 流程需要修改下列檔案
 
@@ -743,14 +747,6 @@ set_app_options -name plan.outline.keep_port_depth -value -1
 | VT_CLASS_LVT_LIB_regexp | \*EL_\* | 填寫 cell 名稱 |
 | ENABLE_AUTO_MULTI_VT_CONSTRAINT | true | 總開關 |
 | LVT_percentage | 15 | LVT 比率 |
-
-[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
-
-### pad_constraints.tcl
-
-```text
-read_def IO.def
-```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
