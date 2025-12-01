@@ -765,10 +765,10 @@ create_voltage_area -power_domains PD_OFF -is_fixed -region {{0 0} {x y}} -guard
 create_voltage_area_rule -name default_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthrough false -allow_logical_feedthrough false
 create_voltage_area_rule -name off_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthrough true -allow_logical_feedthrough true -voltage_areas PD_OFF
 
-create_keepout_margin -type hard_macro -outer {left bottom right top} [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_keepout_margin -type hard_macro -outer {left bottom right top} [get_cells * -physical_context -filter {is_hard_macro == true}]
 create_placement_blockage -type hard_macro -boundary {{0 0}{x y}} -name PM
 
-create_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_macro 2 [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_macro 2 [get_cells * -physical_context -filter {is_hard_macro == true}]
 create_placement_blockage -type hard -boundary {{0 0}{x y}} -name PB
 ```
 
