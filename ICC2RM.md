@@ -26,7 +26,7 @@ treemap-beta
         "D": 30
 ```
 
-填入多層名稱就是走 HIER 架構(限定使用 space 或 tab4)
+填入多層名稱就是走 HIER 架構(限定使用 space 或 tab)
 
 FLAT 架構：
 
@@ -163,9 +163,9 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | PNR_TOP | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/write_data_wscript/top.tcl.gz | 讀取 DP 結果 |
 | PNR_BOT | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME_wscript/top.tcl.gz | 讀取 DP 結果 |
 | ALL | MCMM SCENARIO/MODE/CORNER SETUP |TCL_PARASITIC_SETUP_FILE | [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) | 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
-| ALL | MCMM SCENARIO/MODE/CORNER SETUP |PLACE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 place_opt 啟用的 SCENARIO 名稱 |
-| ALL | MCMM SCENARIO/MODE/CORNER SETUP |CLOCK_OPT_CTS_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 clock_opt_cts 啟用的 SCENARIO 名稱 |
-| ALL | MCMM SCENARIO/MODE/CORNER SETUP |ROUTE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 route_opt 啟用的 SCENARIO 名稱 |
+| PNR | MCMM SCENARIO/MODE/CORNER SETUP |PLACE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 place_opt 啟用的 SCENARIO 名稱 |
+| PNR | MCMM SCENARIO/MODE/CORNER SETUP |CLOCK_OPT_CTS_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 clock_opt_cts 啟用的 SCENARIO 名稱 |
+| PNR | MCMM SCENARIO/MODE/CORNER SETUP |ROUTE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 route_opt 啟用的 SCENARIO 名稱 |
 | DP | LOGICAL INPUTS | VERILOG_NETLIST_FILES | *.vo | design 給檔案 |
 | PNR_TOP | LOGICAL INPUTS | VERILOG_NETLIST_FILES | dp/$DESIGN_NAME/outputs_icc2/write_data.v.gz* | 讀取 DP 結果 |
 | PNR_BOT | LOGICAL INPUTS | VERILOG_NETLIST_FILES | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME.v.gz* | 讀取 DP 結果 |
@@ -204,9 +204,10 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 | HIER | DP_HIGH_CAPACITY_MODE | false | 決定 verilog 讀取模式，設 true 為 outline 模式；設 false 為 design 模式 |
 | HIER | FLOORPLAN_STYLE | abutted | 管道模式 (channel) 或緊鄰模式 (abutted) |
 | HIER | DISTRIBUTED | false | 設 true 為分散式運算模式；設 false 為一般主機模式 |
-| HIER | TCL_TIMING_RULER_SETUP_FILE | [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) | 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
-| HIER | TCL_PAD_CONSTRAINTS_FILE | [pad_constraints.tcl](#pad_constraintstcl) | 設定 pad 位置 |
-| HIER | TCL_PIN_CONSTRAINTS_FILE_SELF | [fix_ports_location.tcl](#fix_ports_loctationtcl) | 修正 ports 位置 |
+| HIER | TCL_USER_INIT_DP_PRE_SCRIPT | [init_dp_pre_script.tcl](#init_dp_pre_scripttcl) | 如果 DP_HIGH_CAPACITY_MODE 為 true 就要設定修正電路 |
+| HIER | TCL_USER_INIT_DP_POST_SCRIPT | [physical_constraints.tcl](#physical_constraintstcl) | 設定 macro placement、blockages 但是不可以有 voltage area |
+| HIER | TCL_USER_EXPAND_OUTLINE_PRE_SCRIPT | [fix_ports_location.tcl](#fix_ports_loctationtcl) | 修正 ports 位置 |
+| HIER | TCL_USER_EXPAND_OUTLINE_POST_SCRIPT | [expand_outline_post_script.tcl](#expand_outline_post_scripttcl) | 修正 outline 模式開檔案錯誤 |
 | HIER | TCL_SHAPING_CONSTRAINTS_FILE | [shaping_constraints.tcl](#shaping_constraintstcl) | 設定 vlotage area 和 shaping constraints |
 | ALL | TCL_AUTO_PLACEMENT_CONSTRAINTS_FILE | [auto_placement_constraints.tcl](#auto_placement_constraintstcl) | 設定 keepout_margin 和 macro 擺放方向 |
 | ALL | CONGESTION_DRIVEN_PLACEMENT | macro | 建議設定 |
@@ -214,7 +215,7 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 | ALL | MACRO_CONSTRAINT_STYLE | on_edge | 建議設定 |
 | ALL | TCL_PNS_FILE | [pns_strategies.tcl](#pns_strategiestcl) | 自定 power & ground 佈線方式 |
 | HIER | PNS_CHARACTERIZE_FLOW | false | 設 true 各 block 重複執行 TCL_COMPILE_PG_FILE 內容；設 false 上層 power 和 ground 佈線壓進 block 內 |
-| ALL | TCL_COMPILE_PG_FILE |  | 此處設定無用，被 sidefile_setup.tcl 的 TCL_COMPILE_PG_FILE 設定覆蓋 |
+| HIER | TCL_POST_PNS_FILE | [post_pns.tcl](#post_pnstcl) | 補充 floorplan 遺漏部分 |
 | ALL | TCL_PIN_CONSTRAINT_FILE | [pin_constraints.tcl](#pin_constraintstcl) | 設定 pin 條件與允許使用的 layer |
 
 [返回 rm_setup 資料夾設定](#rm_setup-資料夾設定)
@@ -223,8 +224,8 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 
 | 流程 | 變數 | 數值 | 說明 |
 | --- | --- | --- | --- |
-| HIER | SIDEFILE_CREATE_FLOORPLAN_FLAT_BOUNDARY_CELLS | [boundary_cells.tcl](#boundary_cellstcl) | 設定 bounadry cell 擺放 |
-| HIER | SIDEFILE_CREATE_FLOORPLAN_FLAT_TAP_CELLS | [tap_cells.tcl](#tap_cellstcl) | 設定 tap cell 擺放 |
+| FLAT | SIDEFILE_CREATE_FLOORPLAN_FLAT_BOUNDARY_CELLS | [boundary_cells.tcl](#boundary_cellstcl) | 設定 bounadry cell 擺放 |
+| FLAT | SIDEFILE_CREATE_FLOORPLAN_FLAT_TAP_CELLS | [tap_cells.tcl](#tap_cellstcl) | 設定 tap cell 擺放 |
 | ALL | ROUTING_LAYER_DIRECTION_OFFSET_LIST | {ME1 horizontal} {ME2 vertical} | 修改繞線方向 |
 | ALL | MIN_ROUTING_LAYER | ME1 | 繞線底層 layer |
 | ALL | MAX_ROUTING_LAYER  |ME5 | 繞線頂層 layer |
@@ -471,6 +472,7 @@ DP FLAT 流程需要建立下列檔案
 - [connect_pg_net_script.tcl](#connect_pg_net_scripttcl)
 - [init_design.mv_setup.tcl](#init_designmv_setuptcl)
 - [physical_constraints.tcl](#physical_constraintstcl)
+- [pin_constraints.tcl](#pin_constraintstcl)
 - [fix_ports_location.tcl](#fix_ports_loctationtcl)
 - [pns_strategies.tcl](#pns_strategiestcl)
 - [tap_cells.tcl](#tap_cellstcl)
@@ -481,6 +483,7 @@ DP HIER 流程需要建立下列檔案
 - [block_insert_cells.tcl](#block_insert_cellstcl)
 - [compile_pg.tcl](#compile_pgtcl)
 - [connect_pg_net_script.tcl](#connect_pg_net_scripttcl)
+- [expand_outline_post_script.tcl](#expand_outline_post_scripttcl)
 - [fix_ports_location.tcl](#fix_ports_loctationtcl)
 - [pad_constraints.tcl](#pad_constraintstcl)
 - [pin_constraints.tcl](#pin_constraintstcl)
@@ -502,10 +505,15 @@ PNR 流程需要修改下列檔案
 ### auto_placement_constraints.tcl
 
 ```text
-set_app_options -name plan.place.continue_on_error -value true
 set_app_options -name plan.place.auto_create_blockages -value none
 set_app_options -name plan.place.auto_generate_blockages -value false
 set_macro_constraints -allowed_orientations {R0 R90 R180 R270 MX MXR90 MY MYR90} [get_cells * -physical_context -filter {is_memory_cell == true}]
+
+create_keepout_margin -type hard_macro -outer {left bottom right top} [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_placement_blockage -type hard_macro -boundary {{0 0}{x y}} -name PM
+
+create_keepout_margin -type hard -tracks_per_macro_pin 0.56 -min_padding_per_macro 2 [get_cells * -physical_context -filter {is_memory_cell == true}]
+create_placement_blockage -type hard -boundary {{0 0}{x y}} -name PB
 ```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
@@ -519,11 +527,11 @@ open_block $block_refname.design
 remove_abstract
 
 #remove_cells [get_cells * -physical_context -filter {ref_name == "SW_CELL_NAME"}]
-if {$block_refname_no_lebel == "block_name"} {
-    create_power_switch_array -power_switch PD_OFF_SW -lib_cell */SW_CELL_NAME -voltage_area PD_OFF -x_pitch 48.72 -x_offset 20 -siterow_pitch 1 -siterow_offset 1
+if {$block_refname_no_label == "block_name"} {
+    create_power_switch_array -power_switch PD_OFF_SW -lib_cell */SW_CELL_NAME -voltage_area DEFAULT_VA -x_pitch 48.72 -x_offset 20 -siterow_pitch 1 -siterow_offset 1
 }
 
-connect_power_switch -source PSW_ON -port_name SW_PORT -mode daisy -direction vertical -voltage_area PD_OFF
+connect_power_switch -source PSW_ON -port_name SW_PORT -mode daisy -direction vertical -voltage_area DEFAULT_VA
 
 associate_mv_cells -power_switches
 
@@ -536,7 +544,7 @@ connect_pg_net -automatic
 create_pg_vias -nets VDDK -from_types stripe -to_types pwrswitch_pin -from_layers ME3 -to_layers ME1 -via_masters {VIA12_1cut_H_3S VIA23_1cut_H_3S}
 
 #remove_cells [get_cells * -physical_context -filter {ref_name =~ TAP}]
-create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area PD_OFF -skip_fixed_cells
+create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area DEFAULT_VA -skip_fixed_cells
 
 connect_pg_net -net VDDK_SW_OFF [get_pins */VDD -physical_context -filter {power_domain == PD_OFF}]
 connect_pg_net -net VDDK [get_pins */VDDR -physical_context -filter {power_domain == PD_OFF}]
@@ -554,8 +562,8 @@ close_lib $block_libfilename
 
 ```text
 #remove_cells [get_cells * -physical_context -filter {ref_name =~ FILLER4}]
-set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4]
-compile_targeted_boundary_cells
+set_boundary_cell_rules -left_boundary_cell [get_lib_cells */FILLER4] -right_boundary_cell [get_lib_cells */FILLER4] -insert_into_blocks -at_va_boundary
+compile_targeted_boundary_cells -all_targets
 #check_targeted_boundary_cells
 ```
 
@@ -601,9 +609,6 @@ compile_pg -strategies ring_strat
 compile_pg -strategies {rail_strat_gndk rail_strat_vddk rail_strat_off} -via_rule rail_via_rule
 compile_pg -straegies tap_strat_off
 compile_pg -strategies {mesh_strat_top mesh_strat_on mesh_strat_off} -via_rule mesh_via_rule
-
-#SW_VDD
-create_pg_vias -nets VDDK -from_types stripe -to_types pwrswitch_pin -from_layer ME5 -to_layers ME1 -via_masters {VIA12_1cut_H_3S VIA23_1cut_H_3S VIA34_1cut_H_3S VIA45_1cut_H_3S}
 ```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
@@ -625,10 +630,25 @@ connect_pg_net -net GNDK [get_flat_pins */VBN -all]
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
 
+### expand_outline_post_script.tcl
+
+```text
+if {$DESIGN_VIEW == "outline"} {
+    foreach block “$DP_BLOCK_REFS $DESIGN_NAME" {
+        if {[sizeof_collection [get_blocks -quiet -all ${block}${LIBRARY_SUFFIX}:${block}/$CURRENT_STEP.outline]] > 0} {
+            remove_block -force ${block}${LIBRARY_SUFFIX}:${block}/$CURRENT_STEP.outline
+        }
+    }
+}
+
+```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
 ### fix_ports_loctation.tcl
 
 ```text
-set unplaced_ports [get_ports -quiet -filter "port_type!=power && port_type!=ground"]
+set unplaced_ports [get_ports -quiet -filter "port_type!=power && port_type!=ground && physical_status==unplaced"]
 foreach_in_collection port $unplaced_ports {
     set port_net [get_nets -of_objects $port]
     set leaf_pin [get_pins -leaf -of_objects $port_net]
@@ -638,12 +658,12 @@ foreach_in_collection port $unplaced_ports {
         set pin_layer [get_object_name [get_attribute $terminal layer]]
         set shape_type [llength $pin_shape]
         if {$shape_type == 2} {
-            set shape_of_terminal [create_shape -shape_type rect -boundary $pin_shape -layer $pin_layer]
+            set shape_for_terminal [create_shape -shape_type rect -boundary $pin_shape -layer $pin_layer]
         } else {
-            set shape_of_terminal [create_shape -shape_type polygon -boundary $pin_shape -layer $pin_layer]
+            set shape_for_terminal [create_shape -shape_type polygon -boundary $pin_shape -layer $pin_layer]
         }
     }
-    crate_terminal -object $shape_of_terminal -port $port
+    create_terminal -object $shape_for_terminal -port $port
 }
 remove_shapes [get_shapes -hierarchical -filter undefined(net)]
 set_fixed_objects [get_terminals -quiet -filter "physical_status==unrestricted"]
@@ -656,7 +676,7 @@ set_fixed_objects [get_terminals -quiet -filter "physical_status==unrestricted"]
 ```text
 create_power_switch_array -power_switch PD_OFF_SW -lib_cell */SW_CELL_NAME -voltage_area PD_OFF -x_pitch 48.72 -x_offset 20 -siterow_pitch 1 -siterow_offset 1
 
-connect_power_switch -source PSW_ON -port_name SW_PORT -mode daisy -direction vertical -voltage_area PD_OFF
+connect_power_switch -source PSW_ON -port_name SW_PORT -mode daisy –ack_out PSW_OFF_ACK_OUT –ack_port_name PSW_OFF_ACK -direction vertical -voltage_area PD_OFF
 
 associate_mv_cells -power_switches
 
@@ -691,8 +711,25 @@ foreach_in_collection scenario [all_scenario] {
     #group_path -name CLOCK_GATE -from [all_registers] -to [get_flat_cells -filter "is_sequential == false && is_combinational == true && is_hard_macro ==false && is_memory_cell == false"]
 }
 
+rm_source –file dont_touch.tcl
+
 # 將 lauch 與 capture 共同區段視為同時到達，只計算分叉後實際差異
 set_app_options -name time.remove_clock_reconvergence_pessimism -value true
+```
+
+[返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
+
+### init_dp_pre_script.tcl
+
+```text
+# DP_HIGH_CAPACITY_MODE 設 true 在 commit_block 遇到錯誤 DPUI‑092
+# 主要原因為你選定的 Module 不符合軟體自動分類要求， module 在 outline 模式沒有 port。commit_block 必須要有 port 才能把模組當成 block，否則會直接跳過並產生上述錯誤。
+# 解法：建立檔案 init_dp_pre_script.tcl 並修改 icc2_dp_setup.tcl 的 TCL_USER_INIT_DP_PRE_SCRIPT
+
+# 全部電路當作 dense 讀取，將 dense_module_depth 設定 -1
+#set_app_options -name plan.outline.dense_module_depth -value -1
+# 或模組當成 block 保留全部 port ，將 keep_port_depth 設定 -1
+set_app_options -name plan.outline.keep_port_depth -value -1
 ```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
@@ -726,10 +763,11 @@ set_fixed_objects [get_cells * -physical_context -filter {is_io == true}]
 read_def Analog_Macro.def
 set_fixed_objects [get_cells * -physical_context -filter {is_hard_macro == true}]
 
+# HIER 模式請勿建立 voltage_area ，請至 shaping_constraints.tcl 建立
 create_voltage_area -power_domains PD_OFF -is_fixed -region {{0 0} {x y}} -guard_band {{2 2}}
 
-create_voltage_area_rule -name default_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthorugh false -allow_logical_feedthrough false
-create_voltage_area_rule -name off_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthorugh true -allow_logical_feedthrough true -voltage_areas PD_OFF
+create_voltage_area_rule -name default_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthrough false -allow_logical_feedthrough false
+create_voltage_area_rule -name off_rule -allow_pass_through true -allow_buffering true -allow_physical_feedthrough true -allow_logical_feedthrough true -voltage_areas PD_OFF
 
 create_keepout_margin -type hard_macro -outer {left bottom right top} [get_cells * -physical_context -filter {is_memory_cell == true}]
 create_placement_blockage -type hard_macro -boundary {{0 0}{x y}} -name PM
@@ -743,6 +781,18 @@ create_placement_blockage -type hard -boundary {{0 0}{x y}} -name PB
 ### pin_constraints.tcl
 
 ```text
+# 決定出 PIN 方向與大小使用以下指令，SIDE 1234 對應 左上右下
+create_pin_constraint –type individual –pin ??? –width 1 –length 2 –side {1 2}
+
+# 指定特定位置，先建立 bundle 再指定座標與 LAYER
+create_bundle –name XXX [get_nets A[127:64]]
+create_pin_constraint –type bundle –bundle XXX –keep_pins_together true
+create_pin_guide –boundary {{x1 y1} {x2 y2}} -layers {M3 M5} [get_bundles XXX]
+
+# 設定某幾條 net 不 through
+create_pin_constraint –type individual –nets [get_nets XXX] –allow_feedthroughs false
+
+# 設定 block pin 使用的 layer
 set_block_pin_constraints -allowed_layers {ME2 ME3 ME4 ME5} -allow_feedthroughs true
 ```
 
@@ -862,10 +912,22 @@ set_pg_strategy_via_rule mesh_via_rule -via_rule { \
 ### post_pns.tcl
 
 ```text
-save_lib -all
-run_block_script -script ./rm_user_plugin_scripts/block_insert_cells.tcl -cells {hier_names/block_names}
+#No-1X gap
+remove_placement_spacing_rules -all
+set_placement_spacing_label -name LR -side both -lib_cells [get_lib_cells */*]
+set_placement_spacing_rule -labels {LR LR} {1 1}
 
-change_view -view design -cells {hier_names/block_names}
+rm_source -file boundary_cells.tcl
+save_lib -all
+
+run_block_script -script ./rm_user_plugin_scripts/block_insert_cells.tcl -cells {hier_names/block_names}
+save_lib -all
+
+rm_source -file init_design.mv_setup.tcl
+rm_source -file tap_cells.tcl
+
+#connect SW_VDD
+create_pg_vias -nets VDDK -from_types stripe -to_types pwrswitch_pin -from_layer M4 -to_layers M1 -via_masters {V12_H_V1S2E11 V23_H_V1S2E11 V34_H_V1S2E11}
 ```
 
 [返回 rm_user_plugin_scripts 資料夾設定](#rm_user_plugin_scripts-資料夾設定)
@@ -917,7 +979,7 @@ remove_voltage_areas -all
 create_voltage_area -power_domains PD_OFF -is_fixed -region {{0 0} {x y}} -guard_band {{2 2}}
 
 # 根據 utilization 自動計算位置
-foreach_in_collection_block [get_blocks -hierarchical] {
+foreach_in_collection block [get_blocks -hierarchical] {
     create_shaping_constraint $block -type utilization -target_util 0.6 -max_util 0.7
 }
 
@@ -932,7 +994,7 @@ foreach_in_collection_block [get_blocks -hierarchical] {
 
 ```text
 #remove_cells [get_cells * -physical_context -filter {ref_name =~ TAP}]
-create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area PD_OFF -skip_fixed_cells
+create_tap_cells -lib_cell [get_lib_cells */TAP] -distance 48.72 -voltage_area PD_OFF –offset 24.36 -skip_fixed_cells
 
 # on tap
 connect_pg_net -net VDDK [get_pins */VDD -physical_context -filter {power_domain == PD_TOP}]
