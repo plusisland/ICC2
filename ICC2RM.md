@@ -151,7 +151,7 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | PNR_TOP | DESIGN PLANNING SETUP | BLOCK_ABSTRACT_FOR_* | $ICV_IN_DESIGN_BLOCK_NAME abstract | 修改各步驟階段變數名稱 |
 | ALL | LIBRARY SETUP | REFERENCE_LIBRARY | *.ndm | 填入 NDM 所在位置 STD_NDM 要在最前面 |
 | ALL | LIBRARY SETUP | TCL_MULTI_VT_CONSTRAINT_FILE | [multi_vth_constraint_script.tcl](#multi_vth_constraint_scripttcl) | 編輯 rm_user_plugin_scripts 裡的檔案，修改 HVT SVT LVT 名稱與 LVT % 數 |
-| ALL | LIBRARY SETUP | TIE_LIB_CELL_PATTERN_LIST | */*TIE* |TIE CELL 名稱 |
+| ALL | LIBRARY SETUP | TIE_LIB_CELL_PATTERN_LIST | */*TIE* | TIE CELL 名稱 |
 | ALL | LIBRARY SETUP | HOLD_FIX_LIB_CELL_PATTERN_LIST | */BUF* */INV* */DEL* | 填入修 Hold time 使用的 cell |
 | ALL | LIBRARY SETUP | CTS_LIB_CELL_PATTERN_LIST | */NBUF* */AOBUF* */AOINV* */SDFF* | 修 CTS 使用，包含repeaters, always-on repeaters, and gates, always-on buffer |
 | ALL | LIBRARY SETUP | CTS_ONLY_LIB_CELL_PATTERN_LIST | */CKBUF* */CKINV* | 填入長 CTS 使用的 cell |
@@ -159,13 +159,13 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | ALL | TECHNOLOGY | ENABLE_REDUNDANT_VIA_INSERTION | true | clock_opt_opto, route_auto, route_opt 塞 double via |
 | ALL | TECHNOLOGY | ENABLE_POST_ROUTE_OPT_REDUNDANT_VIA_INSERTION | true | hyper_route_opt 塞 double via |
 | ALL | TECHNOLOGY | TCL_ANTENNA_RULE_FILE | antenna_rule.tcl | 參考 examples/TCL_ANTENNA_RULE_FILE.txt 核對製程廠給的 antenna 資料內容是否正確 |
-| DP | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | [init_design.mcmm_setup.tcl](#init_designmcmm_setuptcl) | 複製 examples/TCL_MCMM_SETUP_FILE.*.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
-| PNR_TOP | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/write_data_wscript/top.tcl.gz | 讀取 DP 結果 |
-| PNR_BOT | MCMM SCENARIO/MODE/CORNER SETUP |TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME_wscript/top.tcl.gz | 讀取 DP 結果 |
-| ALL | MCMM SCENARIO/MODE/CORNER SETUP |TCL_PARASITIC_SETUP_FILE | [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) | 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
-| PNR | MCMM SCENARIO/MODE/CORNER SETUP |PLACE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 place_opt 啟用的 SCENARIO 名稱 |
-| PNR | MCMM SCENARIO/MODE/CORNER SETUP |CLOCK_OPT_CTS_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 clock_opt_cts 啟用的 SCENARIO 名稱 |
-| PNR | MCMM SCENARIO/MODE/CORNER SETUP |ROUTE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 route_opt 啟用的 SCENARIO 名稱 |
+| DP | MCMM SCENARIO/MODE/CORNER SETUP | TCL_MCMM_SETUP_FILE | [init_design.mcmm_setup.tcl](#init_designmcmm_setuptcl) | 複製 examples/TCL_MCMM_SETUP_FILE.*.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
+| PNR_TOP | MCMM SCENARIO/MODE/CORNER SETUP | TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/write_data_wscript/top.tcl.gz | 讀取 DP 結果 |
+| PNR_BOT | MCMM SCENARIO/MODE/CORNER SETUP | TCL_MCMM_SETUP_FILE | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME_wscript/top.tcl.gz | 讀取 DP 結果 |
+| ALL | MCMM SCENARIO/MODE/CORNER SETUP | TCL_PARASITIC_SETUP_FILE | [init_design.parasitic_setup.tcl](#init_designparasitic_setuptcl) | 複製 examples/TCL_PARASITIC_SETUP_FILE.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
+| PNR | MCMM SCENARIO/MODE/CORNER SETUP | PLACE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 place_opt 啟用的 SCENARIO 名稱 |
+| PNR | MCMM SCENARIO/MODE/CORNER SETUP | CLOCK_OPT_CTS_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 clock_opt_cts 啟用的 SCENARIO 名稱 |
+| PNR | MCMM SCENARIO/MODE/CORNER SETUP | ROUTE_OPT_ACTIVE_SCENARIO_LIST | SCENARIO 名稱 | 根據 init_design.mcmm_setup.tcl 填入 route_opt 啟用的 SCENARIO 名稱 |
 | DP | LOGICAL INPUTS | VERILOG_NETLIST_FILES | *.vo | design 給檔案 |
 | PNR_TOP | LOGICAL INPUTS | VERILOG_NETLIST_FILES | dp/$DESIGN_NAME/outputs_icc2/write_data.v.gz* | 讀取 DP 結果 |
 | PNR_BOT | LOGICAL INPUTS | VERILOG_NETLIST_FILES | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME.v.gz* | 讀取 DP 結果 |
@@ -178,7 +178,7 @@ rm_utilities 資料夾內附圖形化設定介面，輸入 **configureRM --sf** 
 | PNR_TOP | PHYSICAL INPUTS | TCL_FLOORPLAN_FILE | dp/$DESIGN_NAME/outputs_icc2/write_data_write_floorplan/floorplan.tcl | 讀取 DP 結果 |
 | PNR_BOT | PHYSICAL INPUTS | TCL_FLOORPLAN_FILE | dp/$DESIGN_NAME/outputs_icc2/BLOCK_NAME/BLOCK_NAME_write_floorplan/floorplan.tcl | 讀取 DP 結果 |
 | ALL | PHYSICAL INPUTS | DEF_SCAN_FILE | *.def | design 給檔案 |
-| PNR | USER PLUGIN SCRIPTS| TCL_USER_WRITE_DATA_POST_SCRIPT | [write_data_post_script.tcl](#write_data_post_scripttcl) | 於 rm_user_plugin_scripts 新建檔案，並客製化寫出項目 |
+| PNR | USER PLUGIN SCRIPTS | TCL_USER_WRITE_DATA_POST_SCRIPT | [write_data_post_script.tcl](#write_data_post_scripttcl) | 於 rm_user_plugin_scripts 新建檔案，並客製化寫出項目 |
 
 [返回 rm_setup 資料夾設定](#rm_setup-資料夾設定)
 
@@ -194,7 +194,7 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 
 | 流程 | 變數 | 數值 | 說明 |
 | --- | --- | --- | --- |
-| ALL | INITIALIZE_FLOORPLAN_UTIL |  | 清除內容不使用 util 模式，將使用 BOUNDARY 形式 |
+| ALL | INITIALIZE_FLOORPLAN_UTIL | NONE | 清除內容不使用 util 模式，將使用 BOUNDARY 形式 |
 | ALL | INITIALIZE_FLOORPLAN_BOUNDARY | {0 0} {x y} | 使用 x y 設定 DIE 大小 |
 | ALL | INITIALIZE_FLOORPLAN_CORE_OFFSET | 0 0 | 設定為 0 0，使 CORE 可以擺到 DIE 邊緣 |
 | FLAT | TCL_USER_PLACE_PINS_INIT_PRE_SCRIPT | [fix_ports_location.tcl](#fix_ports_loctationtcl) | 修正 port 位置 |
@@ -228,13 +228,13 @@ set search_path [list ./design ./rm_user_plugin_scripts ./rm_tech_scripts ./rm_i
 | FLAT | SIDEFILE_CREATE_FLOORPLAN_FLAT_TAP_CELLS | [tap_cells.tcl](#tap_cellstcl) | 設定 tap cell 擺放 |
 | ALL | ROUTING_LAYER_DIRECTION_OFFSET_LIST | {ME1 horizontal} {ME2 vertical} | 修改繞線方向 |
 | ALL | MIN_ROUTING_LAYER | ME1 | 繞線底層 layer |
-| ALL | MAX_ROUTING_LAYER  |ME5 | 繞線頂層 layer |
+| ALL | MAX_ROUTING_LAYER | ME5 | 繞線頂層 layer |
 | ALL | TCL_USER_CONNECT_PG_NET_SCRIPT | [connect_pg_net_script.tcl](#connect_pg_net_scripttcl) | 自定 power & ground 連接 |
 | ALL | TCL_COMPILE_PG_FILE | [compile_pg.tcl](#compile_pgtcl) | 自定 power & ground 佈線 |
 | ALL | TCL_LIB_CELL_DONT_USE_FILE | dont_use.tcl | 定義不使用 cell |
 | ALL | TCL_CTS_NDR_RULE_FILE | [cts_ndr.tcl](#cts_ndrtcl) | 複製 examples/cts_ndr.tcl 至 rm_icc2_pnr_scripts 裡並修改內容 |
-| ALL | CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST | */FILE64U |填入有電容 FILER 名稱由大到小 |
-| ALL | CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST | */FIL4U |填入無電容 FILER 名稱由大到小 |
+| ALL | CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST | */FILE64U | 填入有電容 FILER 名稱由大到小 |
+| ALL | CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST | */FIL4U | 填入無電容 FILER 名稱由大到小 |
 | ALL | WRITE_GDS_LAYER_MAP_FILE | streamout.map | 轉 GDS 對 layer 用 |
 
 [返回 rm_setup 資料夾設定](#rm_setup-資料夾設定)
@@ -464,7 +464,33 @@ foreach p [array name tluplus_file] {
 
 ## rm_user_plugin_scripts 資料夾設定
 
-DP FLAT 流程需要建立下列檔案
+DP FLAT 流程階段使用下列檔案
+
+```mermaid
+classDiagram
+    init_design_dp --> create_floorplan
+    create_floorplan --> create_power
+    create_power --> place_pins
+    class init_design_dp{
+      connect_pg_net_script.tcl
+    }
+    class create_floorplan{
+      physical_constraints.tcl
+      fix_ports_location.tcl
+      pin_constraints.tcl
+      auto_placement_constraints.tcl
+      boundary_cells.tcl
+      init_design.mv_setup.tcl
+      tap_cells.tcl
+    }
+    class create_power{
+      pns_strategies.tcl
+      compile_pg.tcl
+    }
+    class place_pins{
+      pin_constraints.tcl
+    }
+```
 
 - [auto_placement_constraints.tcl](#auto_placement_constraintstcl)
 - [boundary_cells.tcl](#boundary_cellstcl)
@@ -477,13 +503,53 @@ DP FLAT 流程需要建立下列檔案
 - [pns_strategies.tcl](#pns_strategiestcl)
 - [tap_cells.tcl](#tap_cellstcl)
 
-DP HIER 流程需要建立下列檔案
+DP HIER 流程階段使用下列檔案
+
+```mermaid
+classDiagram
+    init_dp --> commit_blocks
+    commit_blocks --> expand_outline
+    expand_outline --> shaping
+    shaping --> placement
+    placement --> create_power
+    create_power --> place_pins
+    place_pins --> timing_budget
+    class init_dp{
+      init_dp_pre_script.tcl
+      physical_constraints.tcl
+    }
+    class commit_blocks{
+    }
+    class expand_outline{
+        fix_ports_location.tcl
+        expand_outline_post_script.tcl
+    }
+    class shaping{
+        shaping_constraints.tcl
+    }
+    class placement{
+        auto_placement_constraints.tcl
+    }
+    class create_power{
+        pns_strategies.tcl
+        compile_pg.tcl
+        post_pns.tcl
+        boundary_cells.tcl
+        block_insert_cells.tcl
+        init_design.mv_setup.tcl
+        tap_cells.tcl
+    }
+    class place_pins{
+        pin_constraints.tcl
+    }
+    class timing_budget{
+    }
+```
 
 - [auto_placement_constraints.tcl](#auto_placement_constraintstcl)
 - [block_insert_cells.tcl](#block_insert_cellstcl)
 - [boundary_cells.tcl](#boundary_cellstcl)
 - [compile_pg.tcl](#compile_pgtcl)
-- [connect_pg_net_script.tcl](#connect_pg_net_scripttcl)
 - [expand_outline_post_script.tcl](#expand_outline_post_scripttcl)
 - [fix_ports_location.tcl](#fix_ports_loctationtcl)
 - [init_design.mv_setup.tcl](#init_designmv_setuptcl)
@@ -495,7 +561,40 @@ DP HIER 流程需要建立下列檔案
 - [shaping_constraints.tcl](#shaping_constraintstcl)
 - [tap_cells.tcl](#tap_cellstcl)
 
-PNR 流程需要修改下列檔案
+PNR 流程階段使用下列檔案
+
+```mermaid
+classDiagram
+    init_design --> place_opt
+    place_opt --> clock_opt_cts
+    clock_opt_cts --> clock_opt_opto
+    clock_opt_opto --> route_auto
+    route_auto --> route_opt
+    class init_design{
+        init_design_post_script.tcl
+    }
+    class place_opt{
+        place_opt_pre_script.tcl
+        multi_vth_constraint_script.tcl
+        place_opt_post_script.tcl
+    }
+    class clock_opt_cts{
+        clock_opt_cts_pre_script.tcl
+        multi_vth_constraint_script.tcl
+        clock_opt_cts_post_script.tcl
+    }
+    class clock_opt_opto{
+        multi_vth_constraint_script.tcl
+    }
+    class route_auto{
+        multi_vth_constraint_script.tcl
+    }
+    class route_opt{
+        multi_vth_constraint_script.tcl
+        route_opt_post_script.tcl
+        write_data_post_script.tcl
+    }
+```
 
 - [clock_opt_cts_post_script.tcl](#clock_opt_cts_post_scripttcl)
 - [clock_opt_cts_pre_script.tcl](#clock_opt_cts_pre_scripttcl)
@@ -1009,8 +1108,8 @@ connect_pg_net -net GNDK [get_pins */VSS -physical_context -filter {power_domain
 寫出 verilog 不含無電容 FILLER
 
 ```text
-if {$CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST != ""} {
-    lappend write_verilog_lvs_cmd_root -force_reference $CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST
+if {$CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST != ""} {
+    lappend write_verilog_lvs_cmd_root -force_no_reference $CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST
 }
 ```
 
@@ -1029,8 +1128,8 @@ if {$CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST != ""} {
 ## write_verilog for LVS (with pg, and with physical only cells)
 set write_verilog_lvs_cmd_root "write_verilog -compress gzip -exclude {scalar_wire_declarations leaf_module_declarations empty_modules} -hierarchy all"
 
-if {$CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST != ""} {
-    lappend write_verilog_lvs_cmd_root -force_reference $CHIP_FINISH_METAL_FILLER_LIB_CELL_LIST
+if {$CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST != ""} {
+    lappend write_verilog_lvs_cmd_root -force_no_reference "$CHIP_FINISH_NON_METAL_FILLER_LIB_CELL_LIST */TAP"
 }
 set write_verilog_lvs_cmd "$write_verilog_lvs_cmd_root ${OUTPUTS_DIR}/${WRITE_DATA_FROM_BLOCK_NAME}.lvs.v"
 
